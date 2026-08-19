@@ -1,0 +1,109 @@
+@import "tailwindcss";
+
+/* ---------------------------------------------------------------------------
+   Charte yuning visuals — direction « Crépuscule saturé », validée le 19/08/2026
+   sur la scène de test.
+
+   Paire complémentaire corail / turquoise sur ciel prune, clé chaude peu
+   saturée. Ces valeurs sont dupliquées dans `lib/palette.ts` pour Three.js,
+   qui ne sait pas lire les variables CSS — garder les deux synchronisés.
+--------------------------------------------------------------------------- */
+
+@theme {
+  /* --- Ciel, fonds, chrome sombre de l'OS --- */
+  --color-dusk-950: #150819;
+  --color-dusk-900: #2b1230;
+  --color-dusk-800: #3b1a42;
+  --color-dusk-700: #4e2456;
+  --color-dusk-600: #643170;
+
+  /* --- Dominante chaude : sol, grandes surfaces --- */
+  --color-coral-300: #ff9b78;
+  --color-coral-400: #f07a52;
+  --color-coral-500: #d9542f;
+  --color-coral-600: #ad3f22;
+
+  /* --- Complémentaire froide : objets et accents qui doivent ressortir --- */
+  --color-teal-300: #6fe0ea;
+  --color-teal-400: #2ac6e0;
+  --color-teal-500: #12b0d8;
+  --color-teal-600: #0b87a8;
+
+  /* --- Lumière chaude (la lampe). Peu saturée : une clé trop orangée écrase
+         le canal bleu et fait virer le turquoise au vert. --- */
+  --color-lamp-200: #ffe9cc;
+  --color-lamp-400: #ffc98c;
+  --color-lamp-600: #f2913f;
+
+  /* --- Ambiance basse et néons --- */
+  --color-magenta-500: #a8437a;
+
+  /* --- Ciel de la fenêtre et dalle du moniteur --- */
+  --color-sky: #8ee9f2;
+  --color-screen: #103c4d;
+
+  /* --- Skyline vue par la fenêtre. Seuls tons FROIDS et désaturés de la
+         charte, et seule matière située hors de la pièce : c'est le contraste
+         avec le corail intérieur qui fait lire le dehors. Du plus clair (au
+         loin, presque noyé dans le ciel) au plus sombre (au premier plan). --- */
+  --color-city-300: #8e92c4;
+  --color-city-500: #5c60a0;
+  --color-city-700: #3a3d6e;
+
+  /* --- Matières du bureau : bois du plateau --- */
+  --color-wood-300: #e8b184;
+  --color-wood-400: #cf8b57;
+  --color-wood-500: #a8663a;
+  --color-wood-600: #7a4526;
+
+  /* --- Matières du bureau : plastiques sombres --- */
+  --color-shell-300: #7a6a84;
+  --color-shell-500: #4a3b52;
+  --color-shell-700: #2a2032;
+
+  /* --- Papier mat : post-it, notes --- */
+  --color-paper: #f4efe2;
+  --color-postit: #ffd84d;
+
+  /* --- Accents par "app" de l'OS ---
+     ATTENTION : ces valeurs ont été posées contre l'ancienne base bleu nuit.
+     Elles n'ont pas encore été confrontées à la base prune/corail et devront
+     être revalidées au moment de designer les sections. */
+  --color-app-manifesto: #ff8a5b;
+  --color-app-works: #6c5ce7;
+  --color-app-services: #22c3a6;
+  --color-app-about: #ef5d7a;
+  --color-app-contact: #4cb8ff;
+
+  /* --- Typographie ---
+     display : titres, gros impacts
+     sans    : texte courant, UI de l'OS
+     hand    : post-it et accents cartoon de la scène 3D
+     mono    : timecodes, métadonnées, chrome d'éditeur */
+  --font-display: var(--font-bricolage), ui-sans-serif, system-ui, sans-serif;
+  --font-sans: var(--font-instrument), ui-sans-serif, system-ui, sans-serif;
+  --font-hand: var(--font-shantell), "Comic Sans MS", cursive;
+  --font-mono: var(--font-jetbrains), ui-monospace, SFMono-Regular, monospace;
+
+  /* --- Rayons : les "fenêtres" de l'OS et le chrome glass --- */
+  --radius-window: 18px;
+  --radius-panel: 12px;
+}
+
+html,
+body {
+  height: 100%;
+}
+
+body {
+  background: var(--color-dusk-950);
+  color: var(--color-paper);
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+}
+
+/* La scène 3D occupe le viewport : pas de scroll parasite tant que le faux OS
+   n'est pas monté. À revoir quand la transition scroll → zoom sera branchée. */
+body {
+  overscroll-behavior: none;
+}

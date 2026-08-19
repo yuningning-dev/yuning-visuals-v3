@@ -1,0 +1,92 @@
+import { palette } from "./palette";
+
+/**
+ * Schémas d'éclairage de la scène.
+ *
+ * DIRECTION RETENUE : « Crépuscule saturé » (validée le 19/08/2026). Sa palette
+ * a été promue dans `palette.ts` + les tokens de `globals.css` ; ce preset les
+ * lit, il n'y a qu'une seule source de vérité.
+ *
+ * Les deux autres sont écartées et conservées uniquement pour pouvoir refaire
+ * la comparaison sur la vraie géométrie — un schéma qui tenait sur un cube ne
+ * tient pas forcément sur un bureau meublé.
+ *
+ * Ces presets ne pilotent QUE les lumières et le fond. Les matières des objets
+ * appartiennent désormais aux composants du bureau, qui lisent `palette.ts`.
+ */
+
+type Vec3 = [number, number, number];
+
+export type LightingPreset = {
+  id: string;
+  name: string;
+  intent: string;
+  /** Couleur au-delà du mur — ce qu'on voit là où la géométrie s'arrête. */
+  background: string;
+  ambient: { color: string; intensity: number };
+  /** Lumière clé — la lampe de bureau, source dominante. */
+  key: { color: string; intensity: number; position: Vec3 };
+  /** Contre-jour — la fenêtre, derrière le moniteur. */
+  rim: { color: string; intensity: number; position: Vec3 };
+  /**
+   * Intensité des fenêtres allumées de la skyline, de 0 à 1.
+   *
+   * C'est une donnée d'HEURE, pas d'éclairage : elle ne touche aucune lumière et
+   * ne modifie pas les trois schémas ci-dessous. Elle dit seulement s'il fait
+   * assez sombre dehors pour qu'on voie les fenêtres de la ville allumées.
+   * À 0, l'InstancedMesh n'est pas monté du tout — aucun tirage.
+   */
+  cityWindows: number;
+};
+
+export const lightingPresets: LightingPreset[] = [
+  {
+    id: "crepuscule-sature",
+    name: "Crépuscule saturé",
+    intent:
+      "Direction retenue. Clé chaude peu saturée, contre-jour turquoise venant de la fenêtre, ambiance magenta basse.",
+    background: palette.dusk900,
+    // Ambiante abaissée après le montage du décor : à 0.6 elle remplissait les
+    // ombres portées et la scène meublée lisait comme une suite d'aplats.
+    ambient: { color: palette.magenta500, intensity: 0.42 },
+    // Clé volontairement peu saturée : en orange franc elle écrase le canal
+    // bleu et fait virer tous les turquoises au vert.
+    key: { color: palette.lamp400, intensity: 1.9, position: [3.4, 3, 2.4] },
+    // Placé derrière le mur, dans l'axe de la fenêtre : c'est elle qui est
+    // censée jeter cette lumière dans la pièce. Ramené de 0.9 à 0.65 : ce
+    // remplissage ne projette pas d'ombre, il rallumait donc uniformément
+    // celles de la clé et la scène meublée perdait tout relief.
+    rim: { color: palette.teal300, intensity: 0.65, position: [-1.5, 2, -4] },
+    // Il fait encore grand jour derrière la vitre — le ciel est la surface la
+    // plus lumineuse de la scène. Des fenêtres allumées y seraient invisibles
+    // au mieux, incohérentes au pire.
+    cityWindows: 0,
+  },
+  {
+    id: "nuit-chaude",
+    name: "Nuit chaude",
+    intent:
+      "Écartée : la lampe domine, la fenêtre n'est qu'un liseré. Contraste très fort, les noirs avalent la pièce.",
+    background: "#0b0f16",
+    ambient: { color: "#24406f", intensity: 0.3 },
+    key: { color: "#ffcf8a", intensity: 1.45, position: [3, 4, 2] },
+    rim: { color: "#4c7fc4", intensity: 0.55, position: [-4, 1.5, -3.5] },
+    /** Nuit franche : la ville est le seul point de vie derrière la vitre. */
+    cityWindows: 1,
+  },
+  {
+    id: "heure-bleue",
+    name: "Heure bleue",
+    intent:
+      "Écartée : la fenêtre devient la source principale, la lampe n'est qu'un accent latéral. Contraste doux, peu d'énergie.",
+    background: "#141d2e",
+    ambient: { color: "#5f86b8", intensity: 0.75 },
+    key: { color: "#9cc4e8", intensity: 1, position: [-3.5, 3.5, 2.5] },
+    rim: { color: "#ff9b52", intensity: 1, position: [4, 0.8, 0.5] },
+    /** Entre chien et loup : les fenêtres s'allument, mais le ciel tient encore
+     *  et les noie en partie. */
+    cityWindows: 0.7,
+  },
+];
+
+export const defaultPreset = lightingPresets[0];
