@@ -18,6 +18,12 @@ import { mulberry32 } from "@/lib/random";
  * celle du fond. Poser trois teintes à la main donnait trois bandes plates ;
  * ici la profondeur devient continue, et chaque bâtiment est légèrement décalé
  * de son voisin.
+ *
+ * D'où la SÉPARATION entre la forme et la couleur dans ce fichier. Le ciel
+ * appartient au preset : il change avec l'heure. La brume tendant vers lui,
+ * les teintes des bâtiments ne peuvent pas être figées au chargement du module
+ * comme leur silhouette — un tracé calculé une fois, des couleurs recalculées
+ * à chaque changement de ciel.
  */
 
 /** Change tout le tracé de la ville d'un seul coup. */
@@ -32,8 +38,10 @@ export type Building = {
   /** Altitude du toit, en coordonnées monde. */
   top: number;
   z: number;
-  /** Couleur finale, brume et variation par bâtiment déjà appliquées. */
-  color: string;
+  /** Part de ciel dans la couleur finale : 0 au premier plan, ~0.5 au fond. */
+  haze: number;
+  /** Dérive de teinte propre au bâtiment (h, s, l), appliquée après la brume. */
+  shift: [number, number, number];
   /** Graine propre, pour que les fenêtres d'un bâtiment lui restent attachées. */
   seed: number;
 };
@@ -60,8 +68,6 @@ const LAYERS: Layer[] = [
 
 function buildSkyline(): Building[] {
   const random = mulberry32(SEED);
-  const base = new Color(palette.city700);
-  const sky = new Color(palette.sky);
   const out: Building[] = [];
 
   for (const layer of LAYERS) {
@@ -77,17 +83,23 @@ function buildSkyline(): Building[] {
       // Une brume propre à chaque bâtiment, autour de celle du plan : deux
       // voisins à la même distance n'ont jamais exactement la même valeur.
       const haze = Math.min(0.85, Math.max(0, layer.haze + (random() - 0.5) * 0.16));
-      const color = base.clone().lerp(sky, haze);
       // Dérive de teinte et de saturation, très courte : au-delà, la ville
-      // cesse de lire comme un seul matériau vu à travers un seul air.
-      color.offsetHSL((random() - 0.5) * 0.045, (random() - 0.5) * 0.1, (random() - 0.5) * 0.05);
+      // cesse de lire comme un seul matériau vu à travers un seul air. Tirée
+      // ici et conservée, pour que le bâtiment garde SA dérive quel que soit le
+      // ciel — sinon la ville se remanie à chaque changement d'heure.
+      const shift: [number, number, number] = [
+        (random() - 0.5) * 0.045,
+        (random() - 0.5) * 0.1,
+        (random() - 0.5) * 0.05,
+      ];
 
       out.push({
         x,
         width: wMin + random() * (wMax - wMin),
         top: tMin + random() * (tMax - tMin),
         z: layer.z,
-        color: `#${color.getHexString()}`,
+        haze,
+        shift,
         seed: Math.floor(random() * 1e9),
       });
     }
@@ -96,8 +108,25 @@ function buildSkyline(): Building[] {
   return out;
 }
 
-/** Calculé une fois au chargement du module : la ville ne change plus ensuite. */
+/** Calculé une fois au chargement du module : la SILHOUETTE ne change plus. */
 export const BUILDINGS: Building[] = buildSkyline();
+
+/**
+ * Couleurs des bâtiments pour un ciel donné, dans l'ordre de `BUILDINGS`.
+ *
+ * Recalculée à chaque changement de preset, jamais par frame : c'est une
+ * trentaine d'interpolations, autant les refaire que de maintenir un cache.
+ */
+export function buildingColors(sky: string): string[] {
+  const base = new Color(palette.city700);
+  const air = new Color(sky);
+
+  return BUILDINGS.map(({ haze, shift }) => {
+    const color = base.clone().lerp(air, haze);
+    color.offsetHSL(...shift);
+    return `#${color.getHexString()}`;
+  });
+}
 
 /* -------------------------------------------------------------------------- */
 

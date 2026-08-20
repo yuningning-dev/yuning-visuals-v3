@@ -15,6 +15,16 @@ const WIN_WIDTH = win.maxX - win.minX;
 type Props = {
   /** Couleur de la lumière clé du preset actif, pour teinter la poussière. */
   keyColor: string;
+  /**
+   * Ciel du preset actif. C'est ce que la fenêtre laisse entrer : le faisceau
+   * et les flaques en prennent la couleur, sinon un ciel de nuit continue de
+   * projeter un rai de plein jour dans la pièce.
+   *
+   * Dans la direction retenue, cette valeur EST `palette.sky` : le câblage ne
+   * change rien au réglage validé, il ne fait que le rendre solidaire de
+   * l'heure.
+   */
+  skyColor: string;
 };
 
 /**
@@ -29,7 +39,7 @@ type Props = {
  * lumière clé — c'est de la matière éclairée, pas une nappe peinte. D'où la
  * seule prop de ce composant.
  */
-export default function WindowLight({ keyColor }: Props) {
+export default function WindowLight({ keyColor, skyColor }: Props) {
   return (
     <group>
       {/* Le rai part du tiers gauche de l'ouverture, pas de son centre : décalé
@@ -42,7 +52,7 @@ export default function WindowLight({ keyColor }: Props) {
         length={3.4}
         tilt={0.72}
         yaw={-0.5}
-        color={palette.sky}
+        color={skyColor}
         opacity={0.3}
         dustTint={keyColor}
       />
@@ -53,7 +63,7 @@ export default function WindowLight({ keyColor }: Props) {
         position={[WIN_CENTER_X, -desk.height + 0.008, 0.55]}
         rotation={[-Math.PI / 2, 0, 0]}
         size={[WIN_WIDTH * 1.5, 2.6]}
-        color={palette.sky}
+        color={skyColor}
         opacity={0.24}
         falloff={1.5}
       />
@@ -64,7 +74,7 @@ export default function WindowLight({ keyColor }: Props) {
         position={[0, 0.006, monitor.z - 0.18]}
         rotation={[-Math.PI / 2, 0, 0]}
         size={[3.4, 0.95]}
-        color={palette.sky}
+        color={skyColor}
         opacity={0.18}
         falloff={1.6}
       />

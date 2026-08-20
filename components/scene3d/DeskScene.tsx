@@ -86,7 +86,7 @@ export default function DeskScene({ preset }: Props) {
         color={preset.rim.color}
       />
 
-      <Room windowsLit={preset.cityWindows} />
+      <Room windowsLit={preset.cityWindows} sky={preset.sky} />
       <WallDecor />
       <Desk />
       <DeskLamp />
@@ -103,7 +103,7 @@ export default function DeskScene({ preset }: Props) {
         <CameraSlot />
       </Suspense>
 
-      <WindowLight keyColor={preset.key.color} />
+      <WindowLight keyColor={preset.key.color} skyColor={preset.sky} />
       <Reflections />
 
       <PostFX />
