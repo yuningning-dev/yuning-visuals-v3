@@ -143,9 +143,23 @@ Sections, dans l'ordre :
   rayonnement. Leur intensité vient du champ `cityWindows` du preset actif — une
   donnée d'HEURE, pas d'éclairage : elle ne touche aucune lumière. À 0 (« Crépuscule
   saturé », il fait jour) le composant n'est pas monté du tout.
-  Réserve connue : le ciel de la fenêtre est un aplat constant (`palette.sky`), il ne
-  suit pas le preset. En « Nuit chaude » on a donc des fenêtres allumées sur un ciel
-  de plein jour. À trancher quand les presets seront rejoués.
+  Tranché le 20/08/2026 : **le ciel est un champ du preset** (`sky`), plus un
+  aplat constant. C'est la seule indication de l'heure qu'il est dehors, il ne
+  pouvait pas rester figé pendant que `cityWindows` allumait la ville — « Nuit
+  chaude » donnait des fenêtres allumées sur un ciel de plein jour. Ce ciel sert
+  trois choses d'un coup : le fond de la fenêtre, la BRUME de la skyline (les
+  lointains tendent vers lui) et la teinte des fausses lumières de la fenêtre —
+  faisceau et flaques —, qui autrement projetaient un rai de plein jour dans une
+  pièce de nuit. Dans la direction retenue, `sky` vaut exactement `palette.sky` :
+  le câblage ne change rien au réglage validé, il le rend seulement solidaire de
+  l'heure. Seul le reflet du mur sous la tablette reste sur `palette.teal300` —
+  c'est un accent de charte, pas la lumière elle-même.
+  Corollaire dans `skyline-data.ts` : la FORME et la COULEUR y sont séparées.
+  `BUILDINGS` (silhouette, brume, dérive de teinte par bâtiment) est calculé une
+  fois au chargement et ne bouge plus ; `buildingColors(sky)` en dérive les
+  teintes à chaque changement de preset. La dérive de teinte est TIRÉE ET
+  CONSERVÉE, pas retirée à chaque appel — sinon la ville se remanierait à chaque
+  changement d'heure.
 - **Le liseré de contour du moniteur** (`effects/FresnelRim.tsx`) est une coque en
   `BackSide` un peu plus grande que le corps, pas un fresnel posé sur l'objet : sur une
   boîte, les faces sont plates, un fresnel y rendrait une valeur constante par face et
@@ -181,8 +195,9 @@ Sections, dans l'ordre :
     `intensity` du preset reste sur la couleur du MATÉRIAU. Les deux réglages
     ne se marchent pas dessus : l'heure ne dépend pas du scintillement, et le
     scintillement ne rallume pas une ville éteinte. Invisible dans la direction
-    retenue (« Crépuscule saturé » a `cityWindows: 0`), à revoir si les presets
-    sont rejoués.
+    retenue, et c'est normal : « Crépuscule saturé » a `cityWindows: 0`, il fait
+    grand jour. Il se voit dans « Nuit chaude » et « Heure bleue », qui ont
+    maintenant un ciel cohérent (voir le point sur `preset.sky` ci-dessus).
   — Le tirage déterministe est mutualisé dans `lib/random.ts` (mulberry32), que
     partagent maintenant la skyline, ses fenêtres et la poussière.
   — Piège d'outillage : la règle `react-hooks/immutability` refuse une écriture

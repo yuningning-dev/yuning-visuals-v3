@@ -29,6 +29,19 @@ export type LightingPreset = {
   /** Contre-jour — la fenêtre, derrière le moniteur. */
   rim: { color: string; intensity: number; position: Vec3 };
   /**
+   * Couleur du ciel vu par la fenêtre.
+   *
+   * C'est la surface la plus lumineuse de la scène et la SEULE indication de
+   * l'heure qu'il est dehors : elle doit donc suivre le preset, au même titre
+   * que `cityWindows`. Un ciel figé donnait des fenêtres allumées sur du plein
+   * jour — la ville s'allumait sans que la nuit tombe.
+   *
+   * Elle sert aussi de brume à la skyline (les bâtiments lointains tendent vers
+   * elle) et de teinte aux fausses lumières de la fenêtre : c'est la même
+   * lumière, il n'y a qu'une valeur à changer pour changer l'heure.
+   */
+  sky: string;
+  /**
    * Intensité des fenêtres allumées de la skyline, de 0 à 1.
    *
    * C'est une donnée d'HEURE, pas d'éclairage : elle ne touche aucune lumière et
@@ -57,6 +70,9 @@ export const lightingPresets: LightingPreset[] = [
     // remplissage ne projette pas d'ombre, il rallumait donc uniformément
     // celles de la clé et la scène meublée perdait tout relief.
     rim: { color: palette.teal300, intensity: 0.65, position: [-1.5, 2, -4] },
+    // Le ciel validé de la direction retenue : turquoise franc et très clair.
+    // C'est lui la référence, `palette.sky` en est la copie côté charte.
+    sky: palette.sky,
     // Il fait encore grand jour derrière la vitre — le ciel est la surface la
     // plus lumineuse de la scène. Des fenêtres allumées y seraient invisibles
     // au mieux, incohérentes au pire.
@@ -71,7 +87,10 @@ export const lightingPresets: LightingPreset[] = [
     ambient: { color: "#24406f", intensity: 0.3 },
     key: { color: "#ffcf8a", intensity: 1.45, position: [3, 4, 2] },
     rim: { color: "#4c7fc4", intensity: 0.55, position: [-4, 1.5, -3.5] },
-    /** Nuit franche : la ville est le seul point de vie derrière la vitre. */
+    /** Nuit franche. Le ciel reste au-dessus du fond de la pièce — un ciel plus
+     *  sombre que le mur ferait un trou noir dans la fenêtre au lieu du dehors. */
+    sky: "#16233d",
+    /** La ville est le seul point de vie derrière la vitre. */
     cityWindows: 1,
   },
   {
@@ -83,6 +102,9 @@ export const lightingPresets: LightingPreset[] = [
     ambient: { color: "#5f86b8", intensity: 0.75 },
     key: { color: "#9cc4e8", intensity: 1, position: [-3.5, 3.5, 2.5] },
     rim: { color: "#ff9b52", intensity: 1, position: [4, 0.8, 0.5] },
+    /** Bleu de fin de jour : encore clair, mais très en dessous du turquoise de
+     *  plein jour — c'est cet écart de valeur qui laisse les fenêtres ressortir. */
+    sky: "#7ba0cd",
     /** Entre chien et loup : les fenêtres s'allument, mais le ciel tient encore
      *  et les noie en partie. */
     cityWindows: 0.7,

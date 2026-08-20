@@ -58,7 +58,13 @@ function Panel({
  * du vide. Une soustraction booléenne coûterait de la géométrie et des outils
  * pour un résultat identique à l'écran.
  */
-export default function Room({ windowsLit }: { windowsLit: number }) {
+export default function Room({
+  windowsLit,
+  sky,
+}: {
+  windowsLit: number;
+  sky: string;
+}) {
   const plaster = useMemo(() => plasterTexture(), []);
 
   return (
@@ -108,7 +114,7 @@ export default function Room({ windowsLit }: { windowsLit: number }) {
         <ToonMaterial color={palette.coral600} />
       </mesh>
 
-      <WindowOpening windowsLit={windowsLit} />
+      <WindowOpening windowsLit={windowsLit} sky={sky} />
     </group>
   );
 }
@@ -118,11 +124,14 @@ export default function Room({ windowsLit }: { windowsLit: number }) {
  * ne doit pas s'assombrir avec le reste de la pièce. La lumière qu'elle est
  * censée jeter dans la scène est portée par la `rim` du preset, pas par ce plan.
  *
- * Le ciel est volontairement très pâle et non turquoise franc : à teinte égale
- * avec la dalle du moniteur, les deux surfaces fusionnaient et le moniteur
- * flottait dans une tache bleue.
+ * Sa couleur vient du PRESET et non de la charte : c'est elle qui dit l'heure
+ * qu'il est dehors, et elle doit donc s'accorder avec `cityWindows`. Dans la
+ * direction retenue, elle vaut exactement `palette.sky` — volontairement très
+ * pâle et non turquoise franc, parce qu'à teinte égale avec la dalle du
+ * moniteur les deux surfaces fusionnaient et le moniteur flottait dans une
+ * tache bleue.
  */
-function WindowOpening({ windowsLit }: { windowsLit: number }) {
+function WindowOpening({ windowsLit, sky }: { windowsLit: number; sky: string }) {
   const width = win.maxX - win.minX;
   const height = win.maxY - win.minY;
   const centerX = (win.minX + win.maxX) / 2;
@@ -142,10 +151,10 @@ function WindowOpening({ windowsLit }: { windowsLit: number }) {
           trop petit, on aperçoit ses bords et le sol au-delà. */}
       <mesh position={[centerX, centerY, SKY_Z]}>
         <planeGeometry args={[6, 4]} />
-        <meshBasicMaterial color={palette.sky} />
+        <meshBasicMaterial color={sky} />
       </mesh>
 
-      <Skyline windowsLit={windowsLit} />
+      <Skyline windowsLit={windowsLit} sky={sky} />
 
       {/* Dormant : quatre montants sur le pourtour. C'est lui qui fait lire une
           fenêtre — l'ouverture nue lit comme un deuxième écran. */}
