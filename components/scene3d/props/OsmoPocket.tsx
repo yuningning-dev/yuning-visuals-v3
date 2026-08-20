@@ -1,6 +1,10 @@
 "use client";
 
+import { useRef } from "react";
+import { useFrame } from "@react-three/fiber";
+import type { Mesh, MeshToonMaterial } from "three";
 import { palette } from "@/lib/palette";
+import { useReducedMotion } from "@/lib/use-reduced-motion";
 import ToonMaterial from "../ToonMaterial";
 
 const BODY_W = 0.098;
@@ -60,10 +64,7 @@ export default function OsmoPocket() {
         <cylinderGeometry args={[0.005, 0.005, 0.004, 8]} />
         <meshBasicMaterial color={palette.coral400} />
       </mesh>
-      <mesh position={[-0.012, BODY_H * 0.33, FRONT + 0.0095]}>
-        <planeGeometry args={[0.012, 0.005]} />
-        <meshBasicMaterial color="#4ade80" />
-      </mesh>
+      <StatusLed position={[-0.012, BODY_H * 0.33, FRONT + 0.008]} />
 
       {/* Embase de nacelle. */}
       <mesh position={[0.008, gimbalBaseY, 0]} castShadow>
@@ -100,5 +101,85 @@ export default function OsmoPocket() {
         </mesh>
       </group>
     </group>
+  );
+}
+
+/* -------------------------------------------------------------------------- */
+
+/** Couleur de la diode. Vert franc, tirant sur le cyan : sur le corail et le
+ *  prune de la scène, un vert plus jaune se confondrait avec les hautes
+ *  lumières de la lampe. */
+const LED_COLOR = "#00ff44";
+
+/** Intensité au sommet du clignotement. Au-dessus du seuil de bloom de
+ *  `PostFX`, donc la diode déborde d'un halo — c'est lui qu'on voit à cette
+ *  taille, pas les 4 mm de sphère. */
+const LED_PEAK = 2;
+
+/** Braise entre deux éclats. Pas zéro : une diode éteinte disparaît, et l'objet
+ *  redevient mort la plus grande partie du temps. */
+const LED_IDLE = 0.15;
+
+/** Sous `prefers-reduced-motion`, la diode est FIXE à mi-course : l'objet reste
+ *  allumé, plus rien ne clignote. */
+const LED_STEADY = LED_PEAK / 2;
+
+/**
+ * Pulsation : `sin(4t)` repasse au-dessus du seuil toutes les ~1.57 s, et n'y
+ * reste que ~0.23 s. C'est ce rapport très déséquilibré qui fait lire un témoin
+ * d'enregistrement plutôt qu'une lampe qui pompe.
+ */
+const LED_SPEED = 4;
+const LED_THRESHOLD = 0.8;
+
+const MAX_DELTA = 0.1;
+
+/**
+ * Diode d'état de l'Osmo.
+ *
+ * Une SPHÈRE et non le plan qui était là avant : à cette taille on ne lit pas la
+ * forme, on lit le halo, et une sphère l'accroche sous tous les angles alors
+ * qu'un plan disparaît dès que l'objet tourne un peu.
+ *
+ * `emissiveIntensity` est écrite directement sur le matériau du mesh, sans
+ * passer par le state React : c'est une valeur par frame, elle n'a rien à faire
+ * dans un rendu.
+ */
+function StatusLed({ position }: { position: [number, number, number] }) {
+  const mesh = useRef<Mesh>(null);
+  const reduced = useReducedMotion();
+  const time = useRef(0);
+
+  useFrame((_, delta) => {
+    const material = mesh.current?.material as MeshToonMaterial | undefined;
+    if (!material) return;
+
+    if (reduced) {
+      material.emissiveIntensity = LED_STEADY;
+      return;
+    }
+
+    const dt = Math.min(delta, MAX_DELTA);
+    time.current += dt;
+
+    // Le seuil coupe la sinusoïde ; ce qui dépasse est renormalisé de 0 à 1.
+    // Sans cette renormalisation, la diode s'allumerait d'un cran net — ici
+    // elle monte et redescend, ce qui donne une vraie inertie de filament.
+    const wave = Math.sin(time.current * LED_SPEED);
+    const pulse =
+      wave > LED_THRESHOLD ? (wave - LED_THRESHOLD) / (1 - LED_THRESHOLD) : 0;
+
+    material.emissiveIntensity = LED_IDLE + (LED_PEAK - LED_IDLE) * pulse;
+  });
+
+  return (
+    <mesh ref={mesh} position={position}>
+      <sphereGeometry args={[0.004, 10, 8]} />
+      <ToonMaterial
+        color={LED_COLOR}
+        emissive={LED_COLOR}
+        emissiveIntensity={LED_IDLE}
+      />
+    </mesh>
   );
 }

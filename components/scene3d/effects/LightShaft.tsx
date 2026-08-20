@@ -2,6 +2,7 @@
 
 import { useMemo } from "react";
 import { AdditiveBlending, Color, DoubleSide } from "three";
+import ShaftDust from "./ShaftDust";
 
 const vertexShader = /* glsl */ `
   varying vec2 vUv;
@@ -37,6 +38,12 @@ type Props = {
   yaw?: number;
   color: string;
   opacity?: number;
+  /**
+   * Couleur de la lumière clé, dont la poussière prend la teinte. Elle ne vient
+   * pas de `color` : `color` est la couleur du ciel qui entre, la poussière,
+   * elle, est de la matière ÉCLAIRÉE — c'est la source qui la colore.
+   */
+  dustTint: string;
 };
 
 /**
@@ -49,6 +56,12 @@ type Props = {
  * Deux et non trois : à trois, les plans se recoupaient en X franc à l'écran et
  * l'effet lisait comme un artefact, pas comme de la lumière. Le faisceau a aussi
  * besoin d'un `yaw` — vu strictement de face, un rai est invisible.
+ *
+ * L'épaisseur, elle, vient de la POUSSIÈRE (`ShaftDust`) semée dans le même
+ * repère : ce sont les grains qui traversent le rai qui font qu'on le lit comme
+ * un volume traversé de lumière et non comme deux voiles tendus. Composant
+ * séparé parce que c'est un autre métier — géométrie de points et shader de
+ * mouvement, là où le rai n'est que deux quads à fondu fixe.
  */
 export default function LightShaft({
   origin,
@@ -58,6 +71,7 @@ export default function LightShaft({
   yaw = 0,
   color,
   opacity = 0.22,
+  dustTint,
 }: Props) {
   const uniforms = useMemo(
     () => ({
@@ -93,6 +107,10 @@ export default function LightShaft({
             </mesh>
           </group>
         ))}
+
+        {/* Dans le repère déjà incliné : le cône de poussière est aligné sur le
+            rai sans avoir à refaire le calcul de sa direction. */}
+        <ShaftDust width={width} length={length} tilt={tilt} tint={dustTint} />
       </group>
     </group>
   );

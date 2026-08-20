@@ -12,6 +12,11 @@ const WIN_CENTER_X = (win.minX + win.maxX) / 2;
 const WIN_CENTER_Y = (win.minY + win.maxY) / 2;
 const WIN_WIDTH = win.maxX - win.minX;
 
+type Props = {
+  /** Couleur de la lumière clé du preset actif, pour teinter la poussière. */
+  keyColor: string;
+};
+
 /**
  * Tout ce que la fenêtre projette dans la pièce.
  *
@@ -19,8 +24,12 @@ const WIN_WIDTH = win.maxX - win.minX;
  * `rim` du preset : elles ne changent pas l'éclairage des matériaux, elles se
  * contentent de le rendre visible. C'est ce découplage qui permet de les régler
  * à l'oeil sans casser le contraste validé.
+ *
+ * Seule exception : la poussière du faisceau, qui a besoin de la couleur de la
+ * lumière clé — c'est de la matière éclairée, pas une nappe peinte. D'où la
+ * seule prop de ce composant.
  */
-export default function WindowLight() {
+export default function WindowLight({ keyColor }: Props) {
   return (
     <group>
       {/* Le rai part du tiers gauche de l'ouverture, pas de son centre : décalé
@@ -35,6 +44,7 @@ export default function WindowLight() {
         yaw={-0.5}
         color={palette.sky}
         opacity={0.3}
+        dustTint={keyColor}
       />
 
       {/* Flaque au sol, là où le faisceau atterrit — décalée vers le spectateur

@@ -151,6 +151,44 @@ Sections, dans l'ordre :
   boîte, les faces sont plates, un fresnel y rendrait une valeur constante par face et
   les côtés, vus de chant, seraient invisibles. Sa couleur est `preset.rim.color` — un
   rim light EST le contre-jour qui accroche l'arête, donc il suit froid/chaud tout seul.
+- **Pack de mouvement au repos (20/08/2026)** — la scène ne doit jamais être une
+  image fixe, même quand personne ne touche à rien. Quatre mouvements, tous
+  découplés et tous coupés ou ralentis sous `prefers-reduced-motion` :
+  dérive lente de la caméra après 3 s sans pointeur, diode d'état clignotante
+  sur l'Osmo, poussière dans le faisceau de la fenêtre, scintillement des
+  fenêtres de la ville.
+  Points structurants :
+  — La dérive caméra passe par le MÊME canal que le parallax : elle s'ajoute aux
+    angles cibles avant l'amortissement, donc rien à arbitrer entre les deux, et
+    le contrat de `camera-pose.ts` reste intact. Périodes 8 s et 11 s,
+    volontairement non harmoniques : à périodes égales le trajet dessine une
+    ellipse fermée que l'oeil repère en deux tours. Contrairement au parallax,
+    elle reste active au doigt — c'est le seul mouvement de caméra qu'un mobile
+    verra.
+  — La poussière (`effects/ShaftDust.tsx`) est un `Points` + `ShaderMaterial`
+    écrit à la main : la montée est calculée dans le vertex shader, donc aucune
+    position n'est réécrite côté CPU. Elle vit dans le repère DÉJÀ incliné du
+    rai ; la verticale monde y est réinjectée comme uniforme
+    (`uUp = (0, cos tilt, −sin tilt)`), sinon les grains montent dans l'axe du
+    faisceau au lieu de monter tout court. C'est la seule chose du rai qui a
+    besoin de la couleur de la CLÉ (`dustTint`) et non du ciel : de la poussière
+    est de la matière éclairée. D'où la prop `keyColor` de `WindowLight`.
+  — `ToonMaterial` accepte désormais `emissive` / `emissiveIntensity`. La diode
+    de l'Osmo n'a aucune lumière réelle : au pic elle passe le seuil du bloom et
+    le halo apparaît, en creux il disparaît — c'est ce halo qu'on voit, pas les
+    4 mm de sphère.
+  — Le scintillement des fenêtres réécrit `instanceColor` par frame ; le
+    `intensity` du preset reste sur la couleur du MATÉRIAU. Les deux réglages
+    ne se marchent pas dessus : l'heure ne dépend pas du scintillement, et le
+    scintillement ne rallume pas une ville éteinte. Invisible dans la direction
+    retenue (« Crépuscule saturé » a `cityWindows: 0`), à revoir si les presets
+    sont rejoués.
+  — Le tirage déterministe est mutualisé dans `lib/random.ts` (mulberry32), que
+    partagent maintenant la skyline, ses fenêtres et la poussière.
+  — Piège d'outillage : la règle `react-hooks/immutability` refuse une écriture
+    dans un objet atteint depuis un `ref` à l'intérieur d'un `useFrame`. Le
+    contournement propre — et qui se lit mieux — est de sortir le travail par
+    frame dans une fonction au niveau du module (cf. `paintWindows`).
 - Reste à faire : texture du faux OS sur la dalle, transition caméra scroll/clic
   (voir le contrat `camera-pose.ts` ci-dessus), faux OS 2D, contenu, comportement mobile.
 - Ce fichier reflète les décisions de concept prises à ce stade ; à mettre à jour au fil du projet (via `/init` une fois du code existant, ou manuellement après chaque décision structurante).
