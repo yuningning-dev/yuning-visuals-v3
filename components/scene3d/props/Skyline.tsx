@@ -2,7 +2,6 @@
 
 import { useMemo } from "react";
 import type { ColorRepresentation } from "three";
-import { palette } from "@/lib/palette";
 import CityWindows from "./CityWindows";
 import { BASE_Y, BUILDINGS, buildingColors } from "./skyline-data";
 
@@ -42,29 +41,12 @@ export default function Skyline({ windowsLit, sky }: Props) {
           pas de tirage, rien. C'est la version la moins chère de « désactivé ». */}
       {windowsLit > 0 && <CityWindows intensity={windowsLit} />}
 
-      {/* Doublure sombre, 2 % plus grande. Mise à l'échelle depuis l'origine de
-          la pièce, elle déborde de quelques centimètres sur les côtés et le
-          toit de chaque bâtiment, et recule d'autant — c'est ce léger décalage
-          qui creuse la silhouette au lieu de la laisser en découpe nette sur le
-          ciel. Le brouillard la mange plus vite que la couche de devant,
-          puisqu'elle est plus loin : le contour s'efface dans les lointains et
-          reste marqué au premier plan, exactement comme la profondeur le veut.
-
-          Non éclairée et transparente : c'est un aplat de contour, pas un
-          volume de plus à faire exister. */}
-      <group scale={1.02}>
-        {BUILDINGS.map(({ x, width, top, z }, i) => (
-          <mesh key={i} position={[x, (top + BASE_Y) / 2, z]}>
-            <boxGeometry args={[width, top - BASE_Y, width]} />
-            <meshBasicMaterial
-              color={palette.dusk950}
-              transparent
-              opacity={0.6}
-            />
-          </mesh>
-        ))}
-      </group>
-
+      {/* PAS DE DOUBLURE DE CONTOUR — voir CLAUDE.md. Un `scale` sur le groupe
+          met à l'échelle les POSITIONS autant que les tailles : un bâtiment posé
+          à 2.55 se décalait de 5 cm sur le côté en ne grossissant que de 0.5 cm,
+          donc la doublure sortait d'un seul côté, en fantôme décalé, au lieu de
+          border la silhouette. La profondeur ici est portée par la brume par
+          bâtiment de `skyline-data` et par le brouillard de la scène. */}
       {BUILDINGS.map(({ x, width, top, z }, i) => (
         <mesh key={i} position={[x, (top + BASE_Y) / 2, z]}>
           {/* Profondeur égale à la largeur : ces volumes ne sont jamais vus

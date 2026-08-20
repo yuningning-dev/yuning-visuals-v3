@@ -2,16 +2,10 @@
 
 import { useMemo, useRef } from "react";
 import { useFrame } from "@react-three/fiber";
-import {
-  Color,
-  type ColorRepresentation,
-  type Mesh,
-  type MeshBasicMaterial,
-} from "three";
+import { Color, type Mesh, type MeshBasicMaterial } from "three";
 import { palette } from "@/lib/palette";
 import { useReducedMotion } from "@/lib/use-reduced-motion";
 import { layout } from "../scene-layout";
-import FresnelRim from "../effects/FresnelRim";
 import GlowQuad from "../effects/GlowQuad";
 import ToonMaterial from "../ToonMaterial";
 import PostIt from "./PostIt";
@@ -57,13 +51,6 @@ const HALF_H = SCREEN_H / 2;
 type Props = {
   /** Passé au post-it, qui n'existe que sur desktop. */
   showPostIt?: boolean;
-  /**
-   * Couleur du liseré de contour. Reçoit le contre-jour du preset actif : c'est
-   * physiquement ce qu'un rim light EST — la source de derrière qui accroche
-   * l'arête. Le liseré suit donc le froid ou le chaud de la direction choisie
-   * sans qu'aucune table de correspondance ne soit à tenir à jour.
-   */
-  rimColor: ColorRepresentation;
 };
 
 /**
@@ -71,7 +58,7 @@ type Props = {
  * texture du faux OS, et une texture d'interface ne doit pas subir l'éclairage
  * de la pièce sous peine de devenir illisible.
  */
-export default function Monitor({ showPostIt = true, rimColor }: Props) {
+export default function Monitor({ showPostIt = true }: Props) {
   const screenRim = useMemo(
     () => new Color(palette.teal500).multiplyScalar(RIM_EMISSIVE),
     [],
@@ -97,16 +84,11 @@ export default function Monitor({ showPostIt = true, rimColor }: Props) {
         <ToonMaterial color={palette.shell700} />
       </mesh>
 
-      {/* Liseré de contour. La coque déborde de 0.02 sur chaque côté : c'est
-          cette marge, et elle seule, qui fixe l'épaisseur du trait — le corps
-          opaque masque tout le reste de la coque. */}
-      <FresnelRim
-        position={[0, monitor.centerY, 0]}
-        args={[bodyWidth + 0.04, bodyHeight + 0.04, BODY_DEPTH + 0.04]}
-        color={rimColor}
-        intensity={0.5}
-        power={1.6}
-      />
+      {/* PAS DE LISERÉ DE CONTOUR ICI — voir CLAUDE.md. Une coque en `BackSide`
+          autour d'une BOÎTE ne donne pas un trait : elle donne un bandeau plat.
+          La silhouette du moniteur tient toute seule, en valeur, contre le ciel
+          de la fenêtre ; ce qui dit « l'écran est allumé », c'est le liseré
+          émissif de la dalle juste en dessous et la nappe des quatre `GlowQuad`. */}
 
       {/* Placeholder du faux OS : sera remplacé par une render target. */}
       <ScreenPanel position={[0, monitor.centerY, BODY_DEPTH / 2 + 0.002]} />

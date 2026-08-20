@@ -204,11 +204,32 @@ Sections, dans l'ordre :
   teintes à chaque changement de preset. La dérive de teinte est TIRÉE ET
   CONSERVÉE, pas retirée à chaque appel — sinon la ville se remanierait à chaque
   changement d'heure.
-- **Le liseré de contour du moniteur** (`effects/FresnelRim.tsx`) est une coque en
-  `BackSide` un peu plus grande que le corps, pas un fresnel posé sur l'objet : sur une
-  boîte, les faces sont plates, un fresnel y rendrait une valeur constante par face et
-  les côtés, vus de chant, seraient invisibles. Sa couleur est `preset.rim.color` — un
-  rim light EST le contre-jour qui accroche l'arête, donc il suit froid/chaud tout seul.
+- **Deux « contours » ont été essayés puis RETIRÉS (20/08/2026). Ne pas les
+  refaire.** Tous deux produisaient le même défaut à l'écran — un calque en trop
+  autour de l'objet — et tous deux pour une raison géométrique, pas de réglage :
+  aucune valeur d'opacité ou d'intensité ne les rendait corrects.
+  — **Fresnel en coque sur le moniteur** (ancien `effects/FresnelRim.tsx`, supprimé).
+    L'idée était une coque `BackSide` un peu plus grande que le corps, la marge de
+    0.02 devant fixer l'épaisseur du trait. Elle ne la fixe pas. Ce qu'on voyait,
+    c'étaient les faces LATÉRALES intérieures de la coque : vues de chant depuis
+    l'axe de la caméra, leur `abs(dot(normal, toEye))` vaut ~0, donc le terme de
+    fresnel sort à 1 — intensité PLEINE et UNIFORME, un bandeau plat et non un
+    dégradé. Et sa largeur à l'écran est donnée par la PROFONDEUR de la coque
+    projetée en perspective (~`halfW × depth / distance`), pas par la marge : à
+    2 m, 0.11 de profondeur donnait un bandeau deux fois plus large que la marge
+    censée le contenir. Corollaire à retenir : sur une boîte vue de face, un
+    fresnel — sur l'objet comme en coque — ne peut pas donner de liseré. Ce qui
+    dit « écran allumé » aujourd'hui, c'est le liseré émissif de la dalle et les
+    quatre `GlowQuad` ; la silhouette du moniteur tient en valeur contre le ciel.
+  — **Doublure de skyline** (`<group scale={1.02}>` dans `Skyline.tsx`). Un
+    `scale` sur un groupe met à l'échelle les POSITIONS autant que les tailles.
+    Un bâtiment posé à x = 2.55 se décalait donc de 5 cm latéralement en ne
+    grossissant que de ~0.5 cm : dix fois plus de décalage que d'épaisseur, d'où
+    un fantôme décalé d'un seul côté au lieu d'un contour concentrique. Pour un
+    vrai contour il faudrait mettre à l'échelle chaque mesh sur SON centre, pas
+    le groupe — mais la profondeur de la skyline est déjà portée par la brume par
+    bâtiment de `skyline-data` et par le brouillard de la scène, et une doublure
+    n'y ajoutait rien. Pour creuser les plans, le levier est `LAYERS`.
 - **Pack de mouvement au repos (20/08/2026)** — la scène ne doit jamais être une
   image fixe, même quand personne ne touche à rien. Quatre mouvements, tous
   découplés et tous coupés ou ralentis sous `prefers-reduced-motion` :
@@ -249,7 +270,8 @@ Sections, dans l'ordre :
     contournement propre — et qui se lit mieux — est de sortir le travail par
     frame dans une fonction au niveau du module (cf. `paintWindows`).
 - **Indices de profondeur (20/08/2026)** — ombres de contact, brouillard,
-  ciel en dégradé, doublure de skyline. Trois choses à savoir avant d'y toucher :
+  ciel en dégradé. (Une doublure de skyline avait été ajoutée ici puis retirée :
+  voir le point sur les contours ci-dessus.) Trois choses à savoir avant d'y toucher :
   — **Il n'y a PAS de dôme de ciel, et c'est délibéré.** La pièce remplit tout
     le cadre : la couleur de fond du Canvas n'est visible nulle part (vérifié en
     la passant en magenta, pas un pixel ne bouge). Un dôme derrière la scène ne
