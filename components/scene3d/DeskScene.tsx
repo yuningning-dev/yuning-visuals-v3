@@ -103,7 +103,7 @@ export default function DeskScene({ preset }: Props) {
         <CameraSlot />
       </Suspense>
 
-      <WindowLight />
+      <WindowLight keyColor={preset.key.color} />
       <Reflections />
 
       <PostFX />

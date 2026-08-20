@@ -1,5 +1,6 @@
 import { Color } from "three";
 import { palette } from "@/lib/palette";
+import { mulberry32 } from "@/lib/random";
 
 /**
  * Génération de la skyline — géométrie ET teintes.
@@ -36,20 +37,6 @@ export type Building = {
   /** Graine propre, pour que les fenêtres d'un bâtiment lui restent attachées. */
   seed: number;
 };
-
-/**
- * PRNG mulberry32 — court, sans dépendance, et surtout REPRODUCTIBLE.
- * La qualité statistique importe peu ici ; la stabilité, elle, est essentielle.
- */
-function mulberry32(seed: number) {
-  let state = seed;
-  return () => {
-    state = (state + 0x6d2b79f5) | 0;
-    let t = Math.imul(state ^ (state >>> 15), 1 | state);
-    t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
-    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
-  };
-}
 
 type Layer = {
   z: number;
@@ -133,6 +120,13 @@ export type CityWindow = {
   position: [number, number, number];
   /** Couleur déjà variée — teinte chaude et intensité tirées par fenêtre. */
   color: string;
+  /**
+   * Phase du scintillement, en radians. Tirée ICI, sur la graine du bâtiment,
+   * et pas dans la boucle de rendu : c'est la même règle que pour la
+   * silhouette — un déphasage retiré à chaque frame ferait clignoter la ville
+   * au hasard au lieu de la faire respirer.
+   */
+  phase: number;
 };
 
 /**
@@ -180,7 +174,11 @@ function buildWindows(): CityWindow[] {
         // seules les plus vives débordent — comme dans une vraie ville.
         color.multiplyScalar(0.55 + random() * 0.45);
 
-        out.push({ position: [x, y, faceZ], color: `#${color.getHexString()}` });
+        out.push({
+          position: [x, y, faceZ],
+          color: `#${color.getHexString()}`,
+          phase: random() * Math.PI * 2,
+        });
       }
     }
   }
