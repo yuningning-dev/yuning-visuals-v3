@@ -3,6 +3,7 @@
 import { useMemo } from "react";
 import { AdditiveBlending, Color, type ColorRepresentation, DoubleSide } from "three";
 import { colorKey } from "@/lib/palette";
+import { FAKE_LIGHT_LAYER } from "../layers";
 
 const vertexShader = /* glsl */ `
   varying vec2 vUv;
@@ -78,7 +79,12 @@ export default function GlowQuad({
   );
 
   return (
-    <mesh position={position} rotation={rotation}>
+    <mesh
+      position={position}
+      rotation={rotation}
+      // Hors du calque des objets : une fausse lumière ne porte pas d'ombre.
+      onUpdate={(self) => self.layers.set(FAKE_LIGHT_LAYER)}
+    >
       <planeGeometry args={size} />
       <shaderMaterial
         key={`${colorKey(color)}-${opacity}-${falloff}`}

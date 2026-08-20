@@ -3,6 +3,7 @@
 import { useMemo } from "react";
 import { AdditiveBlending, BackSide, Color, type ColorRepresentation } from "three";
 import { colorKey } from "@/lib/palette";
+import { FAKE_LIGHT_LAYER } from "../layers";
 
 const vertexShader = /* glsl */ `
   varying vec3 vNormalW;
@@ -88,7 +89,10 @@ export default function FresnelRim({
   );
 
   return (
-    <mesh position={position}>
+    <mesh
+      position={position}
+      onUpdate={(self) => self.layers.set(FAKE_LIGHT_LAYER)}
+    >
       <boxGeometry args={args} />
       <shaderMaterial
         key={`${colorKey(color)}-${intensity}-${power}`}

@@ -3,6 +3,7 @@
 import { useMemo } from "react";
 import { AdditiveBlending, Color, type ColorRepresentation, DoubleSide } from "three";
 import { colorKey } from "@/lib/palette";
+import { FAKE_LIGHT_LAYER } from "../layers";
 import ShaftDust from "./ShaftDust";
 
 const vertexShader = /* glsl */ `
@@ -93,7 +94,11 @@ export default function LightShaft({
       <group rotation-x={tilt}>
         {planes.map((angle) => (
           <group key={angle} rotation-z={angle}>
-            <mesh rotation-x={Math.PI / 2} position={[0, 0, length / 2]}>
+            <mesh
+              rotation-x={Math.PI / 2}
+              position={[0, 0, length / 2]}
+              onUpdate={(self) => self.layers.set(FAKE_LIGHT_LAYER)}
+            >
               <planeGeometry args={[width, length]} />
               <shaderMaterial
                 key={`${colorKey(color)}-${opacity}`}
