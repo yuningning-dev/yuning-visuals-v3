@@ -3,6 +3,7 @@
 import { useRef } from "react";
 import { useFrame } from "@react-three/fiber";
 import type { Mesh, MeshToonMaterial } from "three";
+import { preCompensate } from "@/lib/agx";
 import { palette } from "@/lib/palette";
 import { useReducedMotion } from "@/lib/use-reduced-motion";
 import ToonMaterial from "../ToonMaterial";
@@ -109,12 +110,14 @@ export default function OsmoPocket() {
 /** Couleur de la diode. Vert franc, tirant sur le cyan : sur le corail et le
  *  prune de la scène, un vert plus jaune se confondrait avec les hautes
  *  lumières de la lampe. */
-const LED_COLOR = "#00ff44";
+const LED_COLOR = preCompensate("#00ff44");
 
 /** Intensité au sommet du clignotement. Au-dessus du seuil de bloom de
  *  `PostFX`, donc la diode déborde d'un halo — c'est lui qu'on voit à cette
- *  taille, pas les 4 mm de sphère. */
-const LED_PEAK = 2;
+ *  taille, pas les 4 mm de sphère. Remontée de 2 à 2.5 avec AgX : la courbe
+ *  ramène les hautes lumières vers le bas, une diode calée juste au-dessus du
+ *  seuil ne débordait plus. */
+const LED_PEAK = 2.5;
 
 /** Braise entre deux éclats. Pas zéro : une diode éteinte disparaît, et l'objet
  *  redevient mort la plus grande partie du temps. */

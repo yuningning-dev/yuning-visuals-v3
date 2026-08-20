@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo } from "react";
 import { useGLTF } from "@react-three/drei";
-import { Box3, Mesh, MeshToonMaterial, Vector3 } from "three";
+import { Color, Box3, Mesh, MeshToonMaterial, Vector3 } from "three";
 import { palette } from "@/lib/palette";
 import { toonGradient } from "@/lib/toon";
 
@@ -21,7 +21,7 @@ export const CAMERA_TRANSFORM = {
  * par la palette du projet : un modèle importé qui garde ses propres gris casse
  * le cel-shading de toute la scène.
  */
-const MATERIAL_COLORS: Record<string, string> = {
+const MATERIAL_COLORS: Record<string, Color> = {
   Black: palette.dusk950,
   Grey_1: palette.shell700,
   Grey_2: palette.shell500,

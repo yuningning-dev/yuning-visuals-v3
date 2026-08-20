@@ -25,6 +25,17 @@ const TWINKLE_SPEED = 3;
 const MAX_DELTA = 0.1;
 
 /**
+ * Force d'émission des fenêtres. La couleur de chaque instance est multipliée
+ * par ce facteur, donc les fenêtres SORTENT de [0,1] : sans ce dépassement,
+ * elles ne peuvent que refléter — c'est lui qui les fait déborder au bloom et
+ * rouler sous la courbe AgX au lieu d'écrêter sur un jaune plat.
+ *
+ * Matériau non éclairé, et émission portée par la couleur : voir `Skyline`, la
+ * ville est dehors, la lampe de la pièce n'a rien à y faire.
+ */
+const EMISSIVE_STRENGTH = 3;
+
+/**
  * Réécrit le buffer de couleurs par instance pour l'instant `t`.
  *
  * Hors du composant, et volontairement : c'est du calcul par frame sur des
@@ -85,9 +96,15 @@ export default function CityWindows({ intensity }: Props) {
   const reduced = useReducedMotion();
   const time = useRef(0);
 
-  // Un gris dont la valeur EST l'intensité : le matériau multiplie la couleur
-  // par instance, donc ce seul facteur monte ou baisse toute la ville.
-  const tint = useMemo(() => new Color(intensity, intensity, intensity), [intensity]);
+  // Un gris dont la valeur est l'intensité de l'heure MULTIPLIÉE par la force
+  // d'émission : le matériau multiplie la couleur par instance, donc ce seul
+  // facteur monte ou baisse toute la ville. `intensity` reste le gradateur —
+  // c'est bien le preset qui dit l'heure, l'émission ne fait que placer le
+  // résultat au-dessus de 1.
+  const tint = useMemo(() => {
+    const value = intensity * EMISSIVE_STRENGTH;
+    return new Color(value, value, value);
+  }, [intensity]);
 
   // Couleurs de repos, à plat, dans l'ordre des instances. Les garder ici évite
   // de reconstruire un `Color` par fenêtre et par frame : la boucle d'animation

@@ -108,10 +108,54 @@ Sections, dans l'ordre :
   sur l'image déjà bloomée et vignettée.
 - **La `pointLight` de la lampe ne projette pas d'ombre** — une seconde shadow map
   doublerait le coût du rendu. Le relief reste porté par la clé directionnelle.
-- **Deux réglages Three à ne pas défaire par inadvertance** :
-  `toneMapping: NoToneMapping` (le ACES Filmic par défaut de R3F désature les aplats
-  et fait mentir la palette), et `shadow.camera.updateProjectionMatrix()` dans `KeyLight`
-  (R3F écrit les bornes du frustum d'ombre mais Three ne recalcule pas la matrice).
+- **Un réglage Three à ne pas défaire par inadvertance** :
+  `shadow.camera.updateProjectionMatrix()` dans `KeyLight` (R3F écrit les bornes du
+  frustum d'ombre mais Three ne recalcule pas la matrice).
+- **Passage à AgX + vrais émissifs (20/08/2026)** — remplace le `NoToneMapping`
+  d'origine, qui écrêtait tout ce qui dépassait 1 : un écran deux fois plus
+  lumineux qu'une diode rendait le même pixel blanc. Points structurants :
+  — **Le tone mapping est dans la CHAÎNE, pas dans le `gl` du Canvas.** Three
+    n'applique `renderer.toneMapping` qu'en rendant dans le framebuffer par
+    défaut (`WebGLPrograms.js`, `currentRenderTarget === null`) : avec un
+    composer branché, le réglage du `gl` ne s'applique JAMAIS. C'est
+    `<ToneMapping mode={AGX}>` de `PostFX` qui porte la courbe. Le `gl` garde en
+    revanche la main sur `toneMappingExposure`, que l'effet lit.
+  — **La charte est PRÉ-COMPENSÉE** (`lib/agx.ts` + `lib/palette.ts`). AgX
+    déplace toutes les valeurs, gris moyen compris : poser `#d9542f` afficherait
+    `#cd7557`. On résout donc, pour chaque couleur, l'entrée dont AgX ressort la
+    valeur validée. Deux tables en découlent, et il faut choisir la bonne :
+    `palette` (compensée) pour les SURFACES, `authoredPalette` (brute) pour les
+    LUMIÈRES — compenser une couleur de lumière compenserait deux fois le même
+    produit, et une clé pré-compensée vire à l'orange franc, ce qui fait
+    basculer tous les turquoises au vert.
+  — **`palette` contient des `Color`, plus des hexadécimaux, et ses clairs
+    dépassent 1.** Pour ressortir au turquoise validé, le ciel doit être posé
+    plus saturé que ce qu'un `#rrggbb` peut écrire. Corollaire à connaître :
+    une couleur ne peut plus être interpolée dans une chaîne (`${color}` rend
+    « [object Object] »), d'où `colorKey()` pour les `key` de remontage des
+    matériaux — sans elle, les fausses lumières gardent la teinte du preset
+    précédent.
+  — **Seuil du bloom recalé de 0.8 à 1.6.** Mécanique, pas esthétique : la
+    charte compensée met le papier à ~1.5, donc à 0.8 le dormant de la fenêtre
+    et les post-it rayonnaient comme des sources. À 1.6, seul ce qui émet
+    vraiment déborde.
+  — **Les surfaces qui émettent gardent un matériau NON ÉCLAIRÉ**, et leur
+    émission passe par la couleur poussée au-dessus de 1 (dalle ×3, liseré de
+    dalle ×2.6, fenêtres de la ville ×3, diffuseur ×1.5). Un `emissive` sur
+    matériau éclairé donnerait le même pixel — mais exposerait ces surfaces à la
+    lampe de la pièce, alors qu'une source ne s'assombrit pas sur sa propre face
+    arrière et qu'une interface ne doit pas devenir illisible côté ombre. Seule
+    la diode de l'Osmo, qui EST un objet de la pièce, utilise le vrai `emissive`
+    de `ToonMaterial`.
+  — **Ce que la courbe coûte, et qui ne se rattrape pas** : 21 tokens sur 32
+    sont restitués exactement ; les 11 autres échouent tous de la même façon,
+    par un plancher de saturation qu'AgX impose aux clairs. Mesuré (écart RMS
+    sur 255) : `postit` 53, `teal300` 39, `sky` 37, `teal400` 32, `lamp600` 16.
+    Concrètement la paire complémentaire corail/turquoise, qui EST la direction
+    validée, ressort pastellisée côté froid — le ciel de la fenêtre passe de
+    `#8ee9f2` à `#c0e9f2` au mieux. Le script de mesure est reproductible depuis
+    `lib/agx.ts`. À rejuger si la direction paraît molle : revenir à
+    `NoToneMapping` est un retrait de l'effet `<ToneMapping>` et du `gl`.
 - **Le canvas est en `fixed inset-0`** (`SceneCanvas`), pas dans une chaîne de hauteurs
   en pourcentage : R3F le dimensionne via un ResizeObserver, qui a besoin d'une boîte
   à taille définie. Une re-mesure est forcée sur `fullscreenchange` ET sur

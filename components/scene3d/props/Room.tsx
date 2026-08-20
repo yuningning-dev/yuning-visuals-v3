@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo } from "react";
-import type { Texture } from "three";
+import type { ColorRepresentation, Texture } from "three";
 import { palette } from "@/lib/palette";
 import { plasterTexture } from "@/lib/textures";
 import { layout } from "../scene-layout";
@@ -36,7 +36,7 @@ function Panel({
   maxX: number;
   minY: number;
   maxY: number;
-  color: string;
+  color: ColorRepresentation;
   map?: Texture;
 }) {
   return (
@@ -63,7 +63,7 @@ export default function Room({
   sky,
 }: {
   windowsLit: number;
-  sky: string;
+  sky: ColorRepresentation;
 }) {
   const plaster = useMemo(() => plasterTexture(), []);
 
@@ -131,7 +131,13 @@ export default function Room({
  * moniteur les deux surfaces fusionnaient et le moniteur flottait dans une
  * tache bleue.
  */
-function WindowOpening({ windowsLit, sky }: { windowsLit: number; sky: string }) {
+function WindowOpening({
+  windowsLit,
+  sky,
+}: {
+  windowsLit: number;
+  sky: ColorRepresentation;
+}) {
   const width = win.maxX - win.minX;
   const height = win.maxY - win.minY;
   const centerX = (win.minX + win.maxX) / 2;

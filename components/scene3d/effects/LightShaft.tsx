@@ -1,7 +1,8 @@
 "use client";
 
 import { useMemo } from "react";
-import { AdditiveBlending, Color, DoubleSide } from "three";
+import { AdditiveBlending, Color, type ColorRepresentation, DoubleSide } from "three";
+import { colorKey } from "@/lib/palette";
 import ShaftDust from "./ShaftDust";
 
 const vertexShader = /* glsl */ `
@@ -36,14 +37,14 @@ type Props = {
   /** Dévers latéral. Sans lui, la caméra frontale regarde dans l'axe du
       faisceau et ne voit qu'une tache, pas un rai. */
   yaw?: number;
-  color: string;
+  color: ColorRepresentation;
   opacity?: number;
   /**
    * Couleur de la lumière clé, dont la poussière prend la teinte. Elle ne vient
    * pas de `color` : `color` est la couleur du ciel qui entre, la poussière,
    * elle, est de la matière ÉCLAIRÉE — c'est la source qui la colore.
    */
-  dustTint: string;
+  dustTint: ColorRepresentation;
 };
 
 /**
@@ -95,7 +96,7 @@ export default function LightShaft({
             <mesh rotation-x={Math.PI / 2} position={[0, 0, length / 2]}>
               <planeGeometry args={[width, length]} />
               <shaderMaterial
-                key={`${color}-${opacity}`}
+                key={`${colorKey(color)}-${opacity}`}
                 vertexShader={vertexShader}
                 fragmentShader={fragmentShader}
                 uniforms={uniforms}

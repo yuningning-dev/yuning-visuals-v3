@@ -1,10 +1,10 @@
 "use client";
 
-import type { Texture } from "three";
+import type { ColorRepresentation, Texture } from "three";
 import { toonGradient } from "@/lib/toon";
 
 type Props = {
-  color: string;
+  color: ColorRepresentation;
   /** Moins de paliers = ombrage plus dur. 3 est le plancher : en dessous, le volume se lit à plat. */
   steps?: number;
   /**
@@ -21,7 +21,7 @@ type Props = {
    * Au-dessus du seuil du bloom de `PostFX`, la surface se met à rayonner : le
    * halo est gratuit, il n'y a aucune lumière réelle à ajouter.
    */
-  emissive?: string;
+  emissive?: ColorRepresentation;
   emissiveIntensity?: number;
 };
 

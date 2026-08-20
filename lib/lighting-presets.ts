@@ -1,4 +1,6 @@
-import { palette } from "./palette";
+import type { ColorRepresentation } from "three";
+import { preCompensate } from "./agx";
+import { authoredPalette, palette } from "./palette";
 
 /**
  * Schémas d'éclairage de la scène.
@@ -13,6 +15,14 @@ import { palette } from "./palette";
  *
  * Ces presets ne pilotent QUE les lumières et le fond. Les matières des objets
  * appartiennent désormais aux composants du bureau, qui lisent `palette.ts`.
+ *
+ * DEUX CHARTES, ET IL FAUT CHOISIR LA BONNE. Les couleurs de LUMIÈRE viennent de
+ * `authoredPalette`, brutes : une lumière multiplie un albédo déjà pré-compensé
+ * pour AgX, la compenser à son tour compenserait deux fois le même produit — et
+ * une clé pré-compensée vire à l'orange franc, ce qui fait basculer tous les
+ * turquoises au vert. Les couleurs de SURFACE (le fond, le ciel) viennent de
+ * `palette`, compensée, parce qu'elles traversent la courbe comme le reste de
+ * l'image.
  */
 
 type Vec3 = [number, number, number];
@@ -22,7 +32,7 @@ export type LightingPreset = {
   name: string;
   intent: string;
   /** Couleur au-delà du mur — ce qu'on voit là où la géométrie s'arrête. */
-  background: string;
+  background: ColorRepresentation;
   ambient: { color: string; intensity: number };
   /** Lumière clé — la lampe de bureau, source dominante. */
   key: { color: string; intensity: number; position: Vec3 };
@@ -40,7 +50,7 @@ export type LightingPreset = {
    * elle) et de teinte aux fausses lumières de la fenêtre : c'est la même
    * lumière, il n'y a qu'une valeur à changer pour changer l'heure.
    */
-  sky: string;
+  sky: ColorRepresentation;
   /**
    * Intensité des fenêtres allumées de la skyline, de 0 à 1.
    *
@@ -61,15 +71,15 @@ export const lightingPresets: LightingPreset[] = [
     background: palette.dusk900,
     // Ambiante abaissée après le montage du décor : à 0.6 elle remplissait les
     // ombres portées et la scène meublée lisait comme une suite d'aplats.
-    ambient: { color: palette.magenta500, intensity: 0.42 },
+    ambient: { color: authoredPalette.magenta500, intensity: 0.42 },
     // Clé volontairement peu saturée : en orange franc elle écrase le canal
     // bleu et fait virer tous les turquoises au vert.
-    key: { color: palette.lamp400, intensity: 1.9, position: [3.4, 3, 2.4] },
+    key: { color: authoredPalette.lamp400, intensity: 1.9, position: [3.4, 3, 2.4] },
     // Placé derrière le mur, dans l'axe de la fenêtre : c'est elle qui est
     // censée jeter cette lumière dans la pièce. Ramené de 0.9 à 0.65 : ce
     // remplissage ne projette pas d'ombre, il rallumait donc uniformément
     // celles de la clé et la scène meublée perdait tout relief.
-    rim: { color: palette.teal300, intensity: 0.65, position: [-1.5, 2, -4] },
+    rim: { color: authoredPalette.teal300, intensity: 0.65, position: [-1.5, 2, -4] },
     // Le ciel validé de la direction retenue : turquoise franc et très clair.
     // C'est lui la référence, `palette.sky` en est la copie côté charte.
     sky: palette.sky,
@@ -89,7 +99,7 @@ export const lightingPresets: LightingPreset[] = [
     rim: { color: "#4c7fc4", intensity: 0.55, position: [-4, 1.5, -3.5] },
     /** Nuit franche. Le ciel reste au-dessus du fond de la pièce — un ciel plus
      *  sombre que le mur ferait un trou noir dans la fenêtre au lieu du dehors. */
-    sky: "#16233d",
+    sky: preCompensate("#16233d"),
     /** La ville est le seul point de vie derrière la vitre. */
     cityWindows: 1,
   },
@@ -104,7 +114,7 @@ export const lightingPresets: LightingPreset[] = [
     rim: { color: "#ff9b52", intensity: 1, position: [4, 0.8, 0.5] },
     /** Bleu de fin de jour : encore clair, mais très en dessous du turquoise de
      *  plein jour — c'est cet écart de valeur qui laisse les fenêtres ressortir. */
-    sky: "#7ba0cd",
+    sky: preCompensate("#7ba0cd"),
     /** Entre chien et loup : les fenêtres s'allument, mais le ciel tient encore
      *  et les noie en partie. */
     cityWindows: 0.7,

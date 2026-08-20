@@ -1,7 +1,9 @@
 "use client";
 
 import { useMemo } from "react";
-import { palette } from "@/lib/palette";
+import { Color } from "three";
+import { preCompensate } from "@/lib/agx";
+import { authoredPalette, palette } from "@/lib/palette";
 import { lampDiffuserTexture, woodGrainTexture } from "@/lib/textures";
 import GlowQuad from "../effects/GlowQuad";
 import ToonMaterial from "../ToonMaterial";
@@ -16,6 +18,22 @@ const CAP_HEIGHT = 0.03;
 const SEGMENTS = 20;
 
 /**
+ * Émission du diffuseur : blanc chaud à 1.5.
+ *
+ * Portée par la COULEUR d'un matériau non éclairé et non par `emissive` sur un
+ * matériau éclairé — même résultat au pixel près (un `emissive` sur albédo noir
+ * n'est qu'une couleur non éclairée), mais un matériau éclairé rendrait le
+ * diffuseur sombre du côté opposé à la clé, alors qu'une source ne s'assombrit
+ * pas sur sa propre face arrière.
+ *
+ * 1.5, franchement sous les 3 de la dalle : le diffuseur est déjà la surface la
+ * plus proche de la caméra à s'allumer, et il porte une texture de dégradé. Plus
+ * haut, la texture est écrasée par le bloom et la lampe redevient le cylindre
+ * blanc uniforme qu'on a passé du temps à éviter.
+ */
+const DIFFUSER_EMISSIVE = new Color(preCompensate("#fff8e8")).multiplyScalar(1.5);
+
+/**
  * Lampe tactile, d'après `references/LAMPE BUREAU .jpg`.
  *
  * Rien à voir avec la lampe articulée du premier jet : c'est un cylindre trapu,
@@ -24,7 +42,10 @@ const SEGMENTS = 20;
  * entre les deux bandeaux de bois et le corps qui s'allume.
  *
  * Le diffuseur est en matériau non éclairé : c'est une surface qui émet, elle ne
- * doit pas s'assombrir du côté opposé à la clé.
+ * doit pas s'assombrir du côté opposé à la clé. Depuis le passage à AgX, il
+ * émet POUR DE BON — sa couleur dépasse 1 (voir `DIFFUSER_EMISSIVE`) au lieu de
+ * se contenter d'être claire. La `pointLight` reste une source distincte : le
+ * diffuseur est ce qu'on VOIT, la pointLight ce qui ÉCLAIRE.
  */
 export default function DeskLamp() {
   const wood = useMemo(() => woodGrainTexture(), []);
@@ -47,7 +68,9 @@ export default function DeskLamp() {
         <cylinderGeometry
           args={[RADIUS * 0.99, RADIUS * 0.99, DIFFUSER_HEIGHT, SEGMENTS]}
         />
-        <meshBasicMaterial map={diffuser} />
+        {/* La couleur MULTIPLIE la texture : le dégradé du diffuseur reste
+            lisible, il émet simplement au-dessus de 1. */}
+        <meshBasicMaterial map={diffuser} color={DIFFUSER_EMISSIVE} />
       </mesh>
 
       <mesh position={[0, capY, 0]} castShadow receiveShadow>
@@ -83,7 +106,7 @@ export default function DeskLamp() {
             montent. C'est ça, diffuser. */}
       <pointLight
         position={[0, diffuserY, 0.04]}
-        color={palette.lamp200}
+        color={authoredPalette.lamp200}
         intensity={2.6}
         distance={3.2}
         decay={1.5}

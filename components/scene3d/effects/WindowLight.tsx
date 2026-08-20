@@ -1,5 +1,6 @@
 "use client";
 
+import type { ColorRepresentation } from "three";
 import { palette } from "@/lib/palette";
 import { layout } from "../scene-layout";
 import GlowQuad from "./GlowQuad";
@@ -14,7 +15,7 @@ const WIN_WIDTH = win.maxX - win.minX;
 
 type Props = {
   /** Couleur de la lumière clé du preset actif, pour teinter la poussière. */
-  keyColor: string;
+  keyColor: ColorRepresentation;
   /**
    * Ciel du preset actif. C'est ce que la fenêtre laisse entrer : le faisceau
    * et les flaques en prennent la couleur, sinon un ciel de nuit continue de
@@ -24,7 +25,7 @@ type Props = {
    * change rien au réglage validé, il ne fait que le rendre solidaire de
    * l'heure.
    */
-  skyColor: string;
+  skyColor: ColorRepresentation;
 };
 
 /**

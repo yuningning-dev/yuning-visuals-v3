@@ -1,5 +1,6 @@
 "use client";
 
+import type { ColorRepresentation } from "three";
 import { palette } from "@/lib/palette";
 import { layout } from "../scene-layout";
 import ToonMaterial from "../ToonMaterial";
@@ -12,7 +13,7 @@ type Note = {
   y: number;
   size: number;
   tilt: number;
-  color: string;
+  color: ColorRepresentation;
 };
 
 /**
@@ -47,7 +48,7 @@ function Print({
   width: number;
   height: number;
   tilt: number;
-  inner: string;
+  inner: ColorRepresentation;
 }) {
   return (
     <group position={[x, y, FRONT_Z]} rotation-z={tilt}>

@@ -1,7 +1,8 @@
 "use client";
 
 import { useMemo } from "react";
-import { AdditiveBlending, BackSide, Color } from "three";
+import { AdditiveBlending, BackSide, Color, type ColorRepresentation } from "three";
+import { colorKey } from "@/lib/palette";
 
 const vertexShader = /* glsl */ `
   varying vec3 vNormalW;
@@ -40,7 +41,7 @@ type Props = {
   /** Dimensions de la coque — à prendre légèrement plus grandes que l'objet. */
   args: [number, number, number];
   position?: [number, number, number];
-  color: string;
+  color: ColorRepresentation;
   /** Volontairement bas : c'est un liseré, pas une source. */
   intensity?: number;
   /** Plus haut = liseré plus serré sur la silhouette. */
@@ -90,7 +91,7 @@ export default function FresnelRim({
     <mesh position={position}>
       <boxGeometry args={args} />
       <shaderMaterial
-        key={`${color}-${intensity}-${power}`}
+        key={`${colorKey(color)}-${intensity}-${power}`}
         vertexShader={vertexShader}
         fragmentShader={fragmentShader}
         uniforms={uniforms}

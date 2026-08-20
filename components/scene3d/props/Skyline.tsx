@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo } from "react";
+import type { ColorRepresentation } from "three";
 import CityWindows from "./CityWindows";
 import { BASE_Y, BUILDINGS, buildingColors } from "./skyline-data";
 
@@ -8,7 +9,7 @@ type Props = {
   /** Intensité des fenêtres allumées, 0 à 1, donnée par le preset actif. */
   windowsLit: number;
   /** Ciel du preset actif, vers lequel la brume fait tendre les lointains. */
-  sky: string;
+  sky: ColorRepresentation;
 };
 
 /**
