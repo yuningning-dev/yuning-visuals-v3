@@ -9,6 +9,7 @@ import {
   type ShaderMaterial,
 } from "three";
 import { colorKey } from "@/lib/palette";
+import { FAKE_LIGHT_LAYER } from "../layers";
 import { preCompensate } from "@/lib/agx";
 import { mulberry32 } from "@/lib/random";
 import { useReducedMotion } from "@/lib/use-reduced-motion";
@@ -214,7 +215,10 @@ export default function ShaftDust({
   });
 
   return (
-    <points frustumCulled={false}>
+    <points
+      frustumCulled={false}
+      onUpdate={(self) => self.layers.set(FAKE_LIGHT_LAYER)}
+    >
       <bufferGeometry>
         <bufferAttribute attach="attributes-position" args={[positions, 3]} />
         <bufferAttribute attach="attributes-aSeed" args={[seeds, 1]} />

@@ -6,6 +6,7 @@ import { palette } from "@/lib/palette";
 import { plasterTexture } from "@/lib/textures";
 import { layout } from "../scene-layout";
 import ToonMaterial from "../ToonMaterial";
+import SkyGradient from "../effects/SkyGradient";
 import Skyline from "./Skyline";
 
 const { wall, desk } = layout;
@@ -155,10 +156,14 @@ function WindowOpening({
           La taille est calculée pour couvrir le cône de vision à travers
           l'ouverture, débattement du parallax compris : si ce plan devient
           trop petit, on aperçoit ses bords et le sol au-delà. */}
-      <mesh position={[centerX, centerY, SKY_Z]}>
-        <planeGeometry args={[6, 4]} />
-        <meshBasicMaterial color={sky} />
-      </mesh>
+      <SkyGradient
+        position={[centerX, centerY, SKY_Z]}
+        size={[6, 4]}
+        sky={sky}
+        // Le dégradé court sur l'ouverture, pas sur le plan : c'est la seule
+        // bande qu'on voit, elle doit contenir tout l'écart de valeur.
+        band={[win.minY, win.maxY]}
+      />
 
       <Skyline windowsLit={windowsLit} sky={sky} />
 

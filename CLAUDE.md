@@ -248,6 +248,35 @@ Sections, dans l'ordre :
     dans un objet atteint depuis un `ref` à l'intérieur d'un `useFrame`. Le
     contournement propre — et qui se lit mieux — est de sortir le travail par
     frame dans une fonction au niveau du module (cf. `paintWindows`).
+- **Indices de profondeur (20/08/2026)** — ombres de contact, brouillard,
+  ciel en dégradé, doublure de skyline. Trois choses à savoir avant d'y toucher :
+  — **Il n'y a PAS de dôme de ciel, et c'est délibéré.** La pièce remplit tout
+    le cadre : la couleur de fond du Canvas n'est visible nulle part (vérifié en
+    la passant en magenta, pas un pixel ne bouge). Un dôme derrière la scène ne
+    rendrait rien. Le seul ciel qu'on voit est celui de l'ouverture, et c'est
+    lui qui porte le dégradé (`effects/SkyGradient.tsx`), zénith plus profond
+    et horizon plus pâle, dérivés de `preset.sky` pour que tous les presets
+    suivent sans réglage.
+  — **Les fausses lumières ont leur propre calque** (`layers.ts`).
+    `ContactShadows` rend la scène ENTIÈRE dans une passe de profondeur : le rai
+    de la fenêtre, qui est de la géométrie, se projetait sur le bureau en grand
+    rectangle sombre — une ombre portée par un faisceau de lumière. Une caméra
+    Three ne voit que le calque 0 par défaut : les fausses lumières sont donc
+    passées sur le calque 1, que seule la caméra de la scène active. Toute
+    passe annexe future en bénéficie sans rien savoir. `frames={1}` et montage
+    dans la frontière `Suspense` de l'appareil photo : l'ombre n'est calculée
+    qu'une fois, une fois le .glb chargé — rien ne bouge sur le plateau.
+  — **Le brouillard est LINÉAIRE, serré, et sa couleur est ramenée dans le
+    gamut.** Trois réglages, trois raisons mesurées. Linéaire parce que la pièce
+    est courte (plateau à 4.2, skyline à 7) : un `fogExp2` assez dense pour la
+    ville voile l'avant-plan à 30 %. Serré (6.2 → 14) parce que la surface la
+    plus lointaine de la pièce est à 5.9 : en dessous, le sol vire au bleu.
+    Ramenée dans le gamut parce que `preset.sky` est pré-compensé pour AgX et
+    vaut ~2 en linéaire : mélangé à 13 % sur un bâtiment sombre, il le
+    quadruplait et la skyline se dissolvait dans la vitre. Le brouillard vient
+    en PLUS de la brume par bâtiment de `skyline-data`, qui reste la source
+    principale de la perspective atmosphérique — il ne fait que creuser l'écart
+    entre les trois plans.
 - Reste à faire : texture du faux OS sur la dalle, transition caméra scroll/clic
   (voir le contrat `camera-pose.ts` ci-dessus), faux OS 2D, contenu, comportement mobile.
 - Ce fichier reflète les décisions de concept prises à ce stade ; à mettre à jour au fil du projet (via `/init` une fois du code existant, ou manuellement après chaque décision structurante).

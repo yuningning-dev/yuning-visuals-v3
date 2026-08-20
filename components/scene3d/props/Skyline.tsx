@@ -2,6 +2,7 @@
 
 import { useMemo } from "react";
 import type { ColorRepresentation } from "three";
+import { palette } from "@/lib/palette";
 import CityWindows from "./CityWindows";
 import { BASE_Y, BUILDINGS, buildingColors } from "./skyline-data";
 
@@ -40,6 +41,29 @@ export default function Skyline({ windowsLit, sky }: Props) {
       {/* Monté seulement s'il fait assez sombre dehors : à 0, pas d'instances,
           pas de tirage, rien. C'est la version la moins chère de « désactivé ». */}
       {windowsLit > 0 && <CityWindows intensity={windowsLit} />}
+
+      {/* Doublure sombre, 2 % plus grande. Mise à l'échelle depuis l'origine de
+          la pièce, elle déborde de quelques centimètres sur les côtés et le
+          toit de chaque bâtiment, et recule d'autant — c'est ce léger décalage
+          qui creuse la silhouette au lieu de la laisser en découpe nette sur le
+          ciel. Le brouillard la mange plus vite que la couche de devant,
+          puisqu'elle est plus loin : le contour s'efface dans les lointains et
+          reste marqué au premier plan, exactement comme la profondeur le veut.
+
+          Non éclairée et transparente : c'est un aplat de contour, pas un
+          volume de plus à faire exister. */}
+      <group scale={1.02}>
+        {BUILDINGS.map(({ x, width, top, z }, i) => (
+          <mesh key={i} position={[x, (top + BASE_Y) / 2, z]}>
+            <boxGeometry args={[width, top - BASE_Y, width]} />
+            <meshBasicMaterial
+              color={palette.dusk950}
+              transparent
+              opacity={0.6}
+            />
+          </mesh>
+        ))}
+      </group>
 
       {BUILDINGS.map(({ x, width, top, z }, i) => (
         <mesh key={i} position={[x, (top + BASE_Y) / 2, z]}>
