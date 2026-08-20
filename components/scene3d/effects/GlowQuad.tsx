@@ -1,7 +1,8 @@
 "use client";
 
 import { useMemo } from "react";
-import { AdditiveBlending, Color, DoubleSide } from "three";
+import { AdditiveBlending, Color, type ColorRepresentation, DoubleSide } from "three";
+import { colorKey } from "@/lib/palette";
 
 const vertexShader = /* glsl */ `
   varying vec2 vUv;
@@ -37,7 +38,7 @@ type Props = {
   rotation?: [number, number, number];
   /** Largeur et hauteur du quad. Un rapport allongé donne une traînée. */
   size: [number, number];
-  color: string;
+  color: ColorRepresentation;
   opacity?: number;
   /**
    * Courbe du fondu. Bas (~1.4) = nappe large et douce, pour une lumière
@@ -80,7 +81,7 @@ export default function GlowQuad({
     <mesh position={position} rotation={rotation}>
       <planeGeometry args={size} />
       <shaderMaterial
-        key={`${color}-${opacity}-${falloff}`}
+        key={`${colorKey(color)}-${opacity}-${falloff}`}
         vertexShader={vertexShader}
         fragmentShader={fragmentShader}
         uniforms={uniforms}

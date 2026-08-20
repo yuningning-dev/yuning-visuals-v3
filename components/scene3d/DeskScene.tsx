@@ -2,7 +2,7 @@
 
 import { Suspense } from "react";
 import { Canvas } from "@react-three/fiber";
-import { NoToneMapping } from "three";
+import { AgXToneMapping } from "three";
 import type { LightingPreset } from "@/lib/lighting-presets";
 import CameraParallax from "./CameraParallax";
 import { START_POSITION, START_TARGET } from "./camera-pose";
@@ -58,13 +58,28 @@ export default function DeskScene({ preset }: Props) {
       // Les deux valeurs viennent de `camera-pose.ts`, qui est aussi ce que lit
       // le parallax : une seule source de vérité pour la pose de départ.
       camera={{ position: [...START_POSITION], fov: 42 }}
-      // NoToneMapping et non le ACES Filmic par défaut de R3F : ce tone mapping
-      // est fait pour du rendu photoréaliste, il compresse les hautes lumières
-      // et désature les aplats. Sur du cel-shading, il fait mentir la palette —
-      // le corail et le turquoise sortaient délavés par rapport aux tokens.
+      // AgX, et non plus NoToneMapping. Le rendu ne tient plus dans [0,1] :
+      // les surfaces qui s'allument (dalle, diffuseur, fenêtres de la ville,
+      // diode) émettent au-dessus de 1, et sans courbe elles écrêtent toutes au
+      // même blanc — un écran deux fois plus lumineux qu'une diode rendait le
+      // même pixel. AgX plutôt qu'ACES parce qu'il conserve la teinte en montant
+      // vers le blanc là où ACES la fait dériver.
+      //
+      // ATTENTION à ce que cette ligne fait VRAIMENT : Three n'applique
+      // `renderer.toneMapping` qu'en rendant dans le framebuffer par défaut. Le
+      // composer de `PostFX` rendant dans une render target, c'est l'effet
+      // `<ToneMapping>` de la chaîne qui porte la courbe. La valeur ci-dessous
+      // dit l'intention et sert si le composer saute ; `toneMappingExposure`,
+      // lui, est bien lu par l'effet — c'est le vrai réglage d'exposition.
+      //
+      // Exposition à 1.15 et non 1 : AgX pose le gris moyen plus bas qu'un rendu
+      // sans courbe, et à 1 toute la pièce descendait d'un cran par rapport à la
+      // direction validée. 1.15 remet les aplats à leur valeur d'origine sans
+      // repousser les émissifs dans l'écrêtage.
+      //
       // `antialias` retiré : le composer prend la main sur le rendu et
       // court-circuite le MSAA du renderer. Il est repris dans `PostFX`.
-      gl={{ toneMapping: NoToneMapping }}
+      gl={{ toneMapping: AgXToneMapping, toneMappingExposure: 1.15 }}
       // `CameraParallax` refait ce cadrage à chaque frame ; celui-ci sert la
       // toute première, et garde la scène juste si le parallax est retiré.
       onCreated={({ camera }) => camera.lookAt(...START_TARGET)}

@@ -1,4 +1,4 @@
-import { Color } from "three";
+import { Color, type ColorRepresentation } from "three";
 import { palette } from "@/lib/palette";
 import { mulberry32 } from "@/lib/random";
 
@@ -117,14 +117,14 @@ export const BUILDINGS: Building[] = buildSkyline();
  * Recalculée à chaque changement de preset, jamais par frame : c'est une
  * trentaine d'interpolations, autant les refaire que de maintenir un cache.
  */
-export function buildingColors(sky: string): string[] {
+export function buildingColors(sky: ColorRepresentation): Color[] {
   const base = new Color(palette.city700);
   const air = new Color(sky);
 
   return BUILDINGS.map(({ haze, shift }) => {
     const color = base.clone().lerp(air, haze);
     color.offsetHSL(...shift);
-    return `#${color.getHexString()}`;
+    return color;
   });
 }
 
@@ -147,8 +147,15 @@ const LIT_RATIO = 0.38;
 
 export type CityWindow = {
   position: [number, number, number];
-  /** Couleur déjà variée — teinte chaude et intensité tirées par fenêtre. */
-  color: string;
+  /**
+   * Couleur déjà variée — teinte chaude et intensité tirées par fenêtre.
+   *
+   * Un `Color` et non un hexadécimal : la charte est pré-compensée pour AgX et
+   * ses clairs dépassent 1 (voir `lib/agx.ts`). Repasser par `#rrggbb` les
+   * ramènerait dans le gamut, c'est-à-dire perdrait exactement ce qui fait
+   * qu'une fenêtre allumée ressort.
+   */
+  color: Color;
   /**
    * Phase du scintillement, en radians. Tirée ICI, sur la graine du bâtiment,
    * et pas dans la boucle de rendu : c'est la même règle que pour la
@@ -160,6 +167,10 @@ export type CityWindow = {
 
 /**
  * Fenêtres allumées, à plat sur la face avant de chaque bâtiment.
+ *
+ * Les couleurs tirées ici sont des couleurs de REPOS, dans [0,1] : c'est
+ * `CityWindows` qui les pousse au-dessus de 1 avec sa force d'émission et le
+ * gradateur du preset.
  *
  * UNIQUEMENT DE L'ÉMISSIF, aucune lumière ajoutée : plusieurs centaines de
  * points lumineux réels seraient hors de question, chacun coûtant une passe
@@ -177,7 +188,11 @@ export type CityWindow = {
  */
 function buildWindows(): CityWindow[] {
   const out: CityWindow[] = [];
-  const warm = new Color(palette.lamp400);
+  // Le jaune des post-it plutôt que l'ambre de la lampe : la ville est vue à
+  // travers une vitre, à cent mètres, elle n'a aucune raison de porter la teinte
+  // de la lampe posée sur le bureau. Ce jaune est aussi plus franc, donc il
+  // tient mieux une fois multiplié par l'émission.
+  const warm = new Color(palette.postit);
 
   for (const building of BUILDINGS) {
     const random = mulberry32(building.seed);
@@ -205,7 +220,7 @@ function buildWindows(): CityWindow[] {
 
         out.push({
           position: [x, y, faceZ],
-          color: `#${color.getHexString()}`,
+          color,
           phase: random() * Math.PI * 2,
         });
       }

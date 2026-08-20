@@ -1,3 +1,6 @@
+import { Color, type ColorRepresentation } from "three";
+import { preCompensate } from "./agx";
+
 /**
  * Palette du projet — direction « Crépuscule saturé », validée sur la scène de
  * test le 19/08/2026.
@@ -10,8 +13,16 @@
  * Three ne sait pas lire les variables CSS : ces valeurs doublent volontairement
  * les tokens de `app/globals.css`. Toute modification doit être répercutée des
  * deux côtés — c'est la seule duplication assumée du projet.
+ *
+ * CE QUI SUIT EST LA VALEUR VOULUE À L'ÉCRAN, pas celle qu'on pose sur les
+ * matériaux. Depuis le passage à AgX (20/08/2026), la scène traverse une courbe
+ * de tone mapping qui déplace toutes les valeurs, gris moyen compris : poser
+ * `#d9542f` afficherait `#cd7557`. Les surfaces lisent donc `palette`, qui est
+ * cette table PRÉ-COMPENSÉE par l'inverse d'AgX — voir `lib/agx.ts`.
+ * Les LUMIÈRES, elles, lisent `authored` : une couleur de lumière multiplie déjà
+ * un albédo compensé, la compenser aussi reviendrait à le faire deux fois.
  */
-export const palette = {
+const authored = {
   /* Ciel, fonds, chrome sombre de l'OS */
   dusk950: "#150819",
   dusk900: "#2b1230",
@@ -71,4 +82,50 @@ export const palette = {
   postit: "#ffd84d",
 } as const;
 
-export type PaletteKey = keyof typeof palette;
+export type PaletteKey = keyof typeof authored;
+
+/**
+ * Les valeurs de la charte telles qu'elles sont AUTORISÉES et telles qu'elles
+ * apparaissent dans `app/globals.css`. À utiliser pour tout ce qui ne traverse
+ * pas la courbe : couleurs de lumière, valeurs de référence, UI 2D.
+ */
+export const authoredPalette: Readonly<Record<PaletteKey, string>> = authored;
+
+/**
+ * La charte pré-compensée, à poser sur les MATÉRIAUX.
+ *
+ * Ce sont des `Color` et non des hexadécimaux : la moitié claire de la charte
+ * demande, pour ressortir juste après AgX, des couleurs plus saturées que ce
+ * qu'un `#rrggbb` peut écrire (voir `lib/agx.ts`). Rien n'y oblige — un shader
+ * travaille en flottant.
+ *
+ * Résolue au chargement du module plutôt que recopiée à la main : une trentaine
+ * de couleurs, quelques dizaines d'itérations chacune, moins d'une milliseconde
+ * — et surtout une seule source de vérité. Recopier les hexadécimaux corrigés
+ * ferait diverger la charte de son rendu à la première retouche, et il faudrait
+ * penser à relancer un script à chaque changement d'exposition.
+ */
+export const palette: Readonly<Record<PaletteKey, Color>> = Object.fromEntries(
+  Object.entries(authored).map(([key, hex]) => [key, preCompensate(hex)]),
+) as Record<PaletteKey, Color>;
+
+/**
+ * Clé stable pour une couleur, à l'usage des `key` de React.
+ *
+ * Plusieurs matériaux du projet se remontent quand leur couleur change (leurs
+ * uniformes sont mémoïsés, changer l'objet est le seul moyen de les rafraîchir).
+ * La clé était bâtie par interpolation de chaîne, ce qui marchait tant que les
+ * couleurs ÉTAIENT des chaînes. Depuis la pré-compensation elles sont des
+ * `Color`, et `${color}` rend « [object Object] » — une clé identique pour
+ * toutes les couleurs, donc plus aucun remontage : les fausses lumières
+ * gardaient la teinte du preset précédent.
+ *
+ * Les canaux bruts, et pas `getHexString()` : la charte dépasse 1, et deux
+ * couleurs HDR distinctes se ramènent au même hexadécimal.
+ */
+export function colorKey(color: ColorRepresentation): string {
+  if (color instanceof Color) {
+    return `${color.r.toFixed(4)}:${color.g.toFixed(4)}:${color.b.toFixed(4)}`;
+  }
+  return String(color);
+}

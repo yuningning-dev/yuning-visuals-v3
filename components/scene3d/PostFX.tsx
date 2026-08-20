@@ -1,7 +1,13 @@
 "use client";
 
-import { Bloom, EffectComposer, SMAA, Vignette } from "@react-three/postprocessing";
-import { BlendFunction, KernelSize } from "postprocessing";
+import {
+  Bloom,
+  EffectComposer,
+  SMAA,
+  ToneMapping,
+  Vignette,
+} from "@react-three/postprocessing";
+import { BlendFunction, KernelSize, ToneMappingMode } from "postprocessing";
 import { useReducedMotion } from "@/lib/use-reduced-motion";
 
 /**
@@ -12,10 +18,27 @@ import { useReducedMotion } from "@/lib/use-reduced-motion";
  * un halo. Sans lui, les surfaces émissives — ciel, dalle, diffuseur — restent
  * des aplats découpés au cutter : la scène peut être juste, elle reste plate.
  *
+ * TONE MAPPING — il est ICI, dans la chaîne, et pas dans le `gl` du Canvas.
+ * Ce n'est pas un choix de style : Three n'applique `renderer.toneMapping` que
+ * lorsqu'il rend dans le framebuffer par défaut (`WebGLPrograms.js`, le
+ * `currentRenderTarget === null` qui garde l'affectation). Dès qu'un composer
+ * est branché, la scène part dans une render target et le réglage du renderer
+ * ne s'applique JAMAIS. Posé là-bas, il aurait l'air de travailler sans rien
+ * faire — le pire des réglages.
+ * L'effet, lui, porte la courbe et lit `toneMappingExposure` du renderer : le
+ * `gl` du Canvas garde donc la main sur l'exposition, et elle seule.
+ * Placé APRÈS le bloom (qui travaille en HDR linéaire, c'est là que le
+ * débordement a un sens) et avant SMAA (qui cherche des contours dans l'image
+ * finale).
+ *
  * Deux réglages font tout le rendu, et ce sont les seuls à toucher :
  * — `luminanceThreshold` : au-dessus de quelle luminosité une surface déborde.
- *   Calé haut volontairement. Plus bas, le mur corail se met lui aussi à
- *   rayonner et l'ensemble part en brouillard.
+ *   RECALÉ DE 0.8 À 1.6 avec AgX, et ce n'est pas un réglage à l'oeil : la
+ *   charte est désormais pré-compensée, donc ses clairs valent plus de 1 (le
+ *   papier est à ~1.5). À 0.8, le dormant de la fenêtre et les post-it se
+ *   mettaient à rayonner comme des sources et la scène partait en brouillard.
+ *   Au-dessus de 1.6 il ne reste que ce qui ÉMET vraiment — dalle, diffuseur,
+ *   fenêtres de la ville, diode.
  * — `intensity` : l'ampleur du débordement.
  *
  * ANTIALIASING — `multisampling` est à 0, ET C'EST VOLONTAIRE. Ne pas le
@@ -40,10 +63,16 @@ export default function PostFX() {
       <Bloom
         mipmapBlur
         intensity={reduced ? 0.5 : 0.85}
-        luminanceThreshold={0.8}
+        luminanceThreshold={1.6}
         luminanceSmoothing={0.35}
         kernelSize={KernelSize.LARGE}
       />
+      {/* AgX plutôt qu'ACES : sur des aplats saturés, ACES vire au pastel et
+          décale les teintes: le corail tourne au saumon. AgX garde la teinte
+          en montant vers le blanc, ce qui est exactement ce qu'on demande à une
+          courbe sur un rendu en aplats. */}
+      <ToneMapping mode={ToneMappingMode.AGX} />
+
       {/* Vignettage discret : ramène l'oeil vers le moniteur sans que le
           procédé se remarque. */}
       <Vignette

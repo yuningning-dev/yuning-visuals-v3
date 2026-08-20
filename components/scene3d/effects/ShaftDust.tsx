@@ -2,7 +2,14 @@
 
 import { useMemo, useRef } from "react";
 import { useFrame } from "@react-three/fiber";
-import { AdditiveBlending, Color, type ShaderMaterial } from "three";
+import {
+  AdditiveBlending,
+  Color,
+  type ColorRepresentation,
+  type ShaderMaterial,
+} from "three";
+import { colorKey } from "@/lib/palette";
+import { preCompensate } from "@/lib/agx";
 import { mulberry32 } from "@/lib/random";
 import { useReducedMotion } from "@/lib/use-reduced-motion";
 
@@ -29,7 +36,7 @@ const COUNT = 200;
 /** Blanc chaud de la poussière. Mélangé à la couleur de la clé plutôt que
  *  remplacé par elle : de la poussière éclairée reste blanche, elle prend juste
  *  la teinte de ce qui l'éclaire. */
-const DUST_BASE = "#fff8e8";
+const DUST_BASE = preCompensate("#fff8e8");
 const TINT_MIX = 0.35;
 
 /** Montée, en unités monde par seconde. C'est de la convection, pas du vent :
@@ -125,7 +132,7 @@ type Props = {
   /** Inclinaison du faisceau, nécessaire pour retrouver la verticale monde. */
   tilt: number;
   /** Couleur de la lumière clé, dont la poussière prend la teinte. */
-  tint: string;
+  tint: ColorRepresentation;
   opacity?: number;
 };
 
@@ -218,7 +225,7 @@ export default function ShaftDust({
         ref={material}
         // Remonte le matériau si la couleur change de preset : les uniformes
         // sont recréés, il faut que Three reprenne l'objet.
-        key={`${tint}-${opacity}`}
+        key={`${colorKey(tint)}-${opacity}`}
         vertexShader={vertexShader}
         fragmentShader={fragmentShader}
         uniforms={uniforms}

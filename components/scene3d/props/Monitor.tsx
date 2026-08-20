@@ -1,6 +1,15 @@
 "use client";
 
+import { useMemo, useRef } from "react";
+import { useFrame } from "@react-three/fiber";
+import {
+  Color,
+  type ColorRepresentation,
+  type Mesh,
+  type MeshBasicMaterial,
+} from "three";
 import { palette } from "@/lib/palette";
+import { useReducedMotion } from "@/lib/use-reduced-motion";
 import { layout } from "../scene-layout";
 import FresnelRim from "../effects/FresnelRim";
 import GlowQuad from "../effects/GlowQuad";
@@ -11,6 +20,34 @@ const { monitor } = layout;
 
 const BEZEL = 0.06;
 const BODY_DEPTH = 0.07;
+
+/**
+ * Facteur d'émission de la dalle. La couleur de base est multipliée par cette
+ * valeur, donc la dalle SORT de [0,1] : c'est ce dépassement, et lui seul, qui
+ * la fait déborder au bloom et rouler vers le blanc sous AgX au lieu de rester
+ * l'aplat sombre qu'elle était.
+ *
+ * 3 et non davantage : au-delà, la dalle vire au turquoise laiteux et le
+ * moniteur perd sa silhouette contre la fenêtre — exactement ce que la teinte
+ * sombre était là pour éviter.
+ */
+const SCREEN_EMISSIVE = 3;
+
+/** Battement de la dalle. ±8 % autour de la valeur d'émission, période ~3 s :
+ *  c'est le souffle d'un rétroéclairage, pas un néon qui grésille. */
+/**
+ * Émission du liseré de dalle. C'est LUI qui déborde au bloom, pas la dalle :
+ * une dalle sombre ne peut pas franchir le seuil sans cesser d'être sombre, et
+ * elle doit le rester pour ne pas se confondre avec la fenêtre juste derrière.
+ * Le halo vient donc du bord — ce qui est aussi ce qu'on voit d'un écran allumé
+ * dans une pièce sombre : le pourtour bave, le noir reste noir.
+ */
+const RIM_EMISSIVE = 2.6;
+
+const FLICKER_DEPTH = 0.08;
+const FLICKER_SPEED = 2;
+
+const MAX_DELTA = 0.1;
 
 const SCREEN_W = monitor.screenWidth;
 const SCREEN_H = monitor.screenHeight;
@@ -26,7 +63,7 @@ type Props = {
    * l'arête. Le liseré suit donc le froid ou le chaud de la direction choisie
    * sans qu'aucune table de correspondance ne soit à tenir à jour.
    */
-  rimColor: string;
+  rimColor: ColorRepresentation;
 };
 
 /**
@@ -35,6 +72,10 @@ type Props = {
  * de la pièce sous peine de devenir illisible.
  */
 export default function Monitor({ showPostIt = true, rimColor }: Props) {
+  const screenRim = useMemo(
+    () => new Color(palette.teal500).multiplyScalar(RIM_EMISSIVE),
+    [],
+  );
   const bodyWidth = monitor.screenWidth + BEZEL * 2;
   const bodyHeight = monitor.screenHeight + BEZEL * 2;
   const bottomY = monitor.centerY - bodyHeight / 2;
@@ -67,21 +108,17 @@ export default function Monitor({ showPostIt = true, rimColor }: Props) {
         power={1.6}
       />
 
-      {/* Placeholder du faux OS : sera remplacé par une render target.
-          Sombre et non éclairé — une dalle claire se confondait avec la
-          fenêtre juste derrière, et le moniteur perdait sa silhouette. */}
-      <mesh position={[0, monitor.centerY, BODY_DEPTH / 2 + 0.002]}>
-        <planeGeometry args={[monitor.screenWidth, monitor.screenHeight]} />
-        <meshBasicMaterial color={palette.screen} />
-      </mesh>
+      {/* Placeholder du faux OS : sera remplacé par une render target. */}
+      <ScreenPanel position={[0, monitor.centerY, BODY_DEPTH / 2 + 0.002]} />
 
       {/* Liseré allumé : le seul signe que l'écran est sous tension tant que
-          la texture du faux OS n'est pas branchée. */}
+          la texture du faux OS n'est pas branchée. Poussé au-dessus de 1 : c'est
+          le seul élément de la dalle qui franchit le seuil du bloom. */}
       <mesh position={[0, monitor.centerY, BODY_DEPTH / 2 + 0.001]}>
         <planeGeometry
           args={[monitor.screenWidth + 0.02, monitor.screenHeight + 0.02]}
         />
-        <meshBasicMaterial color={palette.teal500} />
+        <meshBasicMaterial color={screenRim} />
       </mesh>
 
       {/* Lueur des bords. Posée DEVANT la dalle, et c'est tout l'intérêt : elle
@@ -157,5 +194,55 @@ export default function Monitor({ showPostIt = true, rimColor }: Props) {
         />
       )}
     </group>
+  );
+}
+
+/* -------------------------------------------------------------------------- */
+
+/**
+ * Dalle allumée.
+ *
+ * MATÉRIAU NON ÉCLAIRÉ, et l'émission passe par la COULEUR poussée au-dessus
+ * de 1 — pas par `emissive` sur un matériau éclairé. Les deux donnent le même
+ * pixel (un `emissive × emissiveIntensity` sur un albédo noir n'est rien
+ * d'autre qu'une couleur non éclairée), mais un matériau éclairé exposerait la
+ * dalle à la lampe de la pièce, alors qu'elle doit rester lisible telle quelle :
+ * c'est elle qui recevra la texture du faux OS, et une interface qui s'assombrit
+ * du côté opposé à la lampe est une interface illisible.
+ *
+ * La teinte reste `palette.screen`, sombre et froide : une dalle blanche se
+ * confondait avec la fenêtre juste derrière et le moniteur perdait sa
+ * silhouette. Ce qui change avec AgX, c'est qu'elle ÉMET cette teinte au lieu
+ * de la refléter.
+ */
+function ScreenPanel({ position }: { position: [number, number, number] }) {
+  const mesh = useRef<Mesh>(null);
+  const reduced = useReducedMotion();
+  const time = useRef(0);
+
+  const base = useMemo(
+    () => new Color(palette.screen).multiplyScalar(SCREEN_EMISSIVE),
+    [],
+  );
+
+  useFrame((_, delta) => {
+    if (reduced) return;
+
+    const material = mesh.current?.material as MeshBasicMaterial | undefined;
+    if (!material) return;
+
+    const dt = Math.min(delta, MAX_DELTA);
+    time.current += dt;
+
+    material.color
+      .copy(base)
+      .multiplyScalar(1 + Math.sin(time.current * FLICKER_SPEED) * FLICKER_DEPTH);
+  });
+
+  return (
+    <mesh ref={mesh} position={position}>
+      <planeGeometry args={[monitor.screenWidth, monitor.screenHeight]} />
+      <meshBasicMaterial color={base} />
+    </mesh>
   );
 }
