@@ -31,7 +31,19 @@ export type LightingPreset = {
   id: string;
   name: string;
   intent: string;
-  /** Couleur au-delà du mur — ce qu'on voit là où la géométrie s'arrête. */
+  /**
+   * Couleur au-delà du mur — ce qu'on voit là où la géométrie s'arrête.
+   *
+   * C'est une couleur de SURFACE : elle est effacée dans la cible du composer
+   * puis traverse la courbe AgX comme n'importe quel pixel. Elle doit donc être
+   * PRÉ-COMPENSÉE (`palette.*` ou `preCompensate()`), jamais posée en hex brut,
+   * sinon ce preset dérive à l'écran pendant que les autres tiennent — et la
+   * comparaison entre directions ne veut plus rien dire.
+   *
+   * Et elle se voit vraiment : au format ~16/9 la pièce remplit le cadre, mais
+   * sur un écran très large elle laisse des bandes franches à gauche et à
+   * droite (mesuré à 2400×700). Ce n'est pas une valeur morte.
+   */
   background: ColorRepresentation;
   ambient: { color: string; intensity: number };
   /** Lumière clé — la lampe de bureau, source dominante. */
@@ -93,7 +105,7 @@ export const lightingPresets: LightingPreset[] = [
     name: "Nuit chaude",
     intent:
       "Écartée : la lampe domine, la fenêtre n'est qu'un liseré. Contraste très fort, les noirs avalent la pièce.",
-    background: "#0b0f16",
+    background: preCompensate("#0b0f16"),
     ambient: { color: "#24406f", intensity: 0.3 },
     key: { color: "#ffcf8a", intensity: 1.45, position: [3, 4, 2] },
     rim: { color: "#4c7fc4", intensity: 0.55, position: [-4, 1.5, -3.5] },
@@ -108,7 +120,7 @@ export const lightingPresets: LightingPreset[] = [
     name: "Heure bleue",
     intent:
       "Écartée : la fenêtre devient la source principale, la lampe n'est qu'un accent latéral. Contraste doux, peu d'énergie.",
-    background: "#141d2e",
+    background: preCompensate("#141d2e"),
     ambient: { color: "#5f86b8", intensity: 0.75 },
     key: { color: "#9cc4e8", intensity: 1, position: [-3.5, 3.5, 2.5] },
     rim: { color: "#ff9b52", intensity: 1, position: [4, 0.8, 0.5] },

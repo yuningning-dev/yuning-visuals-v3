@@ -49,10 +49,14 @@ function paintWindows(
   t: number,
 ) {
   for (let i = 0; i < CITY_WINDOWS.length; i += 1) {
-    const factor =
-      1 -
-      TWINKLE_DEPTH +
-      TWINKLE_DEPTH * Math.sin(t * TWINKLE_SPEED + CITY_WINDOWS[i].phase);
+    // Sinus RENORMALISÉ sur [0,1] avant d'être dosé. Une sinusoïde brute varie
+    // sur [-1,1] : dosée telle quelle, elle descendait à `1 - 2 × DEPTH`, soit
+    // le double de la profondeur demandée, et la ville clignotait au lieu de
+    // respirer. Avec la renormalisation, `TWINKLE_DEPTH` veut enfin dire ce que
+    // son nom annonce — le facteur tient sur [1 - DEPTH, 1].
+    const wave =
+      0.5 + 0.5 * Math.sin(t * TWINKLE_SPEED + CITY_WINDOWS[i].phase);
+    const factor = 1 - TWINKLE_DEPTH + TWINKLE_DEPTH * wave;
 
     const o = i * 3;
     attribute.setXYZ(i, base[o] * factor, base[o + 1] * factor, base[o + 2] * factor);

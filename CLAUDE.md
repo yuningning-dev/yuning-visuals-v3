@@ -272,13 +272,21 @@ Sections, dans l'ordre :
 - **Indices de profondeur (20/08/2026)** — ombres de contact, brouillard,
   ciel en dégradé. (Une doublure de skyline avait été ajoutée ici puis retirée :
   voir le point sur les contours ci-dessus.) Trois choses à savoir avant d'y toucher :
-  — **Il n'y a PAS de dôme de ciel, et c'est délibéré.** La pièce remplit tout
-    le cadre : la couleur de fond du Canvas n'est visible nulle part (vérifié en
-    la passant en magenta, pas un pixel ne bouge). Un dôme derrière la scène ne
-    rendrait rien. Le seul ciel qu'on voit est celui de l'ouverture, et c'est
-    lui qui porte le dégradé (`effects/SkyGradient.tsx`), zénith plus profond
-    et horizon plus pâle, dérivés de `preset.sky` pour que tous les presets
-    suivent sans réglage.
+  — **Il n'y a PAS de dôme de ciel, et c'est délibéré.** Le seul ciel qu'on voit
+    est celui de l'ouverture, et c'est lui qui porte le dégradé
+    (`effects/SkyGradient.tsx`), zénith plus profond et horizon plus pâle,
+    dérivés de `preset.sky` pour que tous les presets suivent sans réglage.
+    Un dôme n'apparaîtrait que là où la pièce s'arrête, c'est-à-dire hors de
+    ses murs : on y verrait du ciel à la place d'une paroi, ce qui est pire
+    que le fond uni actuel.
+    CORRECTION DU 20/08/2026 : ce point affirmait que le fond du Canvas n'est
+    « visible nulle part », mesuré au magenta. C'est FAUX hors du ~16/9 — la
+    mesure d'origine n'avait été faite qu'à ce format. Repassé au magenta en
+    2400×700, la pièce laisse de larges bandes à gauche et à droite ; en
+    portrait il reste un liseré haut et bas. `preset.background` est donc une
+    couleur de surface bel et bien affichée, d'où sa pré-compensation AgX (voir
+    `lib/lighting-presets.ts`). À retenir aussi comme dette : **le décor ne
+    remplit pas un cadre très large**, à traiter avec le comportement mobile.
   — **Les fausses lumières ont leur propre calque** (`layers.ts`).
     `ContactShadows` rend la scène ENTIÈRE dans une passe de profondeur : le rai
     de la fenêtre, qui est de la géométrie, se projetait sur le bureau en grand
