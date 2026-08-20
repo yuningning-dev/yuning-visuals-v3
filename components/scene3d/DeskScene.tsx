@@ -201,7 +201,7 @@ export default function DeskScene({ preset }: Props) {
       <WallDecor />
       <Desk />
       <DeskLamp />
-      <Monitor rimColor={preset.rim.color} />
+      <Monitor />
       <Keyboard />
       <Mousepad />
       <Mouse />
